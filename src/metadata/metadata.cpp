@@ -1,12 +1,15 @@
 #include "metadata/metadata.hpp"
 
 #include <LIEF/PE.hpp>
+#include <format>
 #include <iostream>
 
-BinaryMetadata::BinaryMetadata(std::unique_ptr<LIEF::Binary>& binary)
-    : _binary(binary) {
+#include "checksums/file_checksum.h"
+
 BinaryMetadata::BinaryMetadata(const std::string& path) : _path(path) {
     _binary = LIEF::Parser::parse(path);
+    if (LIEF::PE::Binary::classof(_binary.get())) {
+        auto& pe = static_cast<LIEF::PE::Binary&>(*_binary);
         std::cout << "== Dos Header ==" << '\n';
         std::cout << pe.dos_header() << '\n';
 
@@ -82,6 +85,20 @@ BinaryMetadata::BinaryMetadata(const std::string& path) : _path(path) {
 }
 void BinaryMetadata::get_metadata() {}
 
+std::vector<BinaryMetadata::ExportedFn> BinaryMetadata::get_exports() {
+    std::vector<ExportedFn> exported_functions = {};
+    if (LIEF::PE::Binary::classof(_binary.get())) {
+        auto& pe = static_cast<LIEF::PE::Binary&>(*_binary);
+        for (auto& exported_function : pe.exported_functions()) {
+            exported_functions.push_back(ExportedFn{
+                exported_function.address(),
+                exported_function.name(),
+            });
+        }
+    }
+    return exported_functions;
+}
+
 std::vector<BinaryMetadata::ImportedFn> BinaryMetadata::get_imports() {
     std::vector<ImportedFn> imported_functions = {};
     if (LIEF::PE::Binary::classof(_binary.get())) {
@@ -94,4 +111,18 @@ std::vector<BinaryMetadata::ImportedFn> BinaryMetadata::get_imports() {
         }
     }
     return imported_functions;
+}
+
+std::vector<std::pair<std::string, std::string>> BinaryMetadata::get_general() {
+    std::vector<std::pair<std::string, std::string>> pairs;
+    if (LIEF::PE::Binary::classof(_binary.get())) {
+        auto& pe = static_cast<LIEF::PE::Binary&>(*_binary);
+    }
+    pairs.push_back(std::make_pair("Original size",
+                                   std::to_string(_binary->original_size())));
+    pairs.push_back(std::make_pair(
+        "Image base", std::format("0x{:x}", _binary->imagebase())));
+    std::string file_md5 = compute_md5_from_file(_path);
+    pairs.push_back(std::make_pair("MD5", file_md5));
+    return pairs;
 }
