@@ -89,13 +89,14 @@ std::vector<BinaryMetadata::ExportedFn> BinaryMetadata::get_exports() {
     std::vector<ExportedFn> exported_functions = {};
     if (LIEF::PE::Binary::classof(_binary.get())) {
         auto& pe = static_cast<LIEF::PE::Binary&>(*_binary);
-        for (auto& exported_function : pe.exported_functions()) {
-            exported_functions.push_back(ExportedFn{
-                exported_function.address(),
-                exported_function.name(),
-            });
-        }
     }
+    for (auto& exported_function : _binary->exported_functions()) {
+        exported_functions.push_back(ExportedFn{
+            std::format("0x{:x}", exported_function.address()),
+            exported_function.name(),
+        });
+    }
+    std::cout << exported_functions.size() << std::endl;
     return exported_functions;
 }
 

@@ -11,7 +11,7 @@ class BinaryMetadata {
         std::string fonction_name;
     };
     struct ExportedFn {
-        uint64_t address;
+        std::string address;
         std::string fonction_name;
     };
 
