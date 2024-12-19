@@ -12,10 +12,11 @@ class BinaryMetadata {
     };
 
    public:
-    BinaryMetadata(std::unique_ptr<LIEF::Binary> &binary);
+    BinaryMetadata(const std::string &path);
     void get_metadata();
     std::vector<ImportedFn> get_imports();
 
    private:
     std::unique_ptr<LIEF::Binary> &_binary;
+    std::string _path;
 };

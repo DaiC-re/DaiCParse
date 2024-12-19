@@ -5,8 +5,8 @@
 
 BinaryMetadata::BinaryMetadata(std::unique_ptr<LIEF::Binary>& binary)
     : _binary(binary) {
-    if (LIEF::PE::Binary::classof(binary.get())) {
-        auto& pe = static_cast<LIEF::PE::Binary&>(*binary);
+BinaryMetadata::BinaryMetadata(const std::string& path) : _path(path) {
+    _binary = LIEF::Parser::parse(path);
         std::cout << "== Dos Header ==" << '\n';
         std::cout << pe.dos_header() << '\n';
 
