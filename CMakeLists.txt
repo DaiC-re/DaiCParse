@@ -73,7 +73,7 @@ if(BUILD_TESTING)
     target_include_directories(${TEST_CASE}
       PUBLIC
         $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/exports>
-      PRIVATE 
+      PRIVATE
         ${TARGET_INCLUDE_FOLDER}
         # Any other extra include required
     )
