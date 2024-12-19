@@ -17,7 +17,6 @@ class BinaryMetadata {
 
    public:
     BinaryMetadata(const std::string &path);
-    void get_metadata();
     std::vector<ImportedFn> get_imports();
     std::vector<ExportedFn> get_exports();
     std::vector<std::pair<std::string, std::string>> get_general();
