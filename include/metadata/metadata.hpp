@@ -21,6 +21,7 @@ class BinaryMetadata {
     std::vector<ExportedFn> get_exports();
     std::vector<std::pair<std::string, std::string>> get_general();
     std::vector<std::pair<std::string, std::string>> get_dos();
+    std::vector<std::pair<std::string, std::string>> get_header();
 
    private:
     std::unique_ptr<LIEF::Binary> _binary;

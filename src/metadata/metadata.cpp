@@ -17,7 +17,7 @@ std::vector<BinaryMetadata::ExportedFn> BinaryMetadata::get_exports() {
     }
     for (auto& exported_function : _binary->exported_functions()) {
         exported_functions.push_back(ExportedFn{
-            std::format("0x{:x}", exported_function.address()),
+            std::format("0x{:X}", exported_function.address()),
             exported_function.name(),
         });
     }
@@ -46,7 +46,7 @@ std::vector<std::pair<std::string, std::string>> BinaryMetadata::get_general() {
     pairs.push_back(std::make_pair("Original size",
                                    std::to_string(_binary->original_size())));
     pairs.push_back(std::make_pair(
-        "Image base", std::format("0x{:x}", _binary->imagebase())));
+        "Image base", std::format("0x{:X}", _binary->imagebase())));
     std::string file_md5 = compute_md5_from_file(_path);
     pairs.push_back(std::make_pair("MD5", file_md5));
     return pairs;
@@ -55,7 +55,33 @@ std::vector<std::pair<std::string, std::string>> BinaryMetadata::get_general() {
 static inline void add_dos_var(
     std::vector<std::pair<std::string, std::string>>& pairs, std::string name,
     int val) {
-    pairs.push_back(std::make_pair(name, std::format("{:x}", val)));
+    pairs.push_back(std::make_pair(name, std::format("{:X}", val)));
+}
+
+std::vector<std::pair<std::string, std::string>> BinaryMetadata::get_header() {
+    std::vector<std::pair<std::string, std::string>> file_headers;
+    if (LIEF::PE::Binary::classof(_binary.get())) {
+        auto& pe = static_cast<LIEF::PE::Binary&>(*_binary);
+        auto header = pe.header();
+        file_headers.push_back(
+            std::make_pair("Machine", LIEF::PE::to_string(header.machine())));
+        file_headers.push_back(std::make_pair(
+            "Sections count", std::to_string(header.numberof_sections())));
+        file_headers.push_back(std::make_pair(
+            "Time Date Stamp", std::to_string(header.time_date_stamp())));
+        file_headers.push_back(
+            std::make_pair("Ptr to Symbol table",
+                           std::to_string(header.pointerto_symbol_table())));
+        file_headers.push_back(std::make_pair(
+            "Number of symbols", std::to_string(header.numberof_symbols())));
+        file_headers.push_back(
+            std::make_pair("Size of optional header",
+                           std::to_string(header.sizeof_optional_header())));
+        file_headers.push_back(
+            std::make_pair("Characteristics raw value",
+                           std::format("{:X}", header.characteristics())));
+    }
+    return file_headers;
 }
 
 std::vector<std::pair<std::string, std::string>> BinaryMetadata::get_dos() {
