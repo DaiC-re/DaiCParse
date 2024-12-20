@@ -28,9 +28,9 @@ const std::string compute_md5_from_file(const std::string_view path) {
         std::cerr << "Error reading file!" << std::endl;
         std::cerr << file.fail() << std::endl;
     }
-    char signature[MD5_STRING_SIZE];
+    char signature[MD5_STRING_SIZE] = {};
     auto md5_helper = md5::md5_t(buffer, file_size);
     md5_helper.get_string(signature);
 
-    return std::string(signature, MD5_STRING_SIZE);
+    return std::string(signature, MD5_STRING_SIZE - 1);
 }
