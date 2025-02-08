@@ -16,14 +16,23 @@ class BinaryMetadata {
     };
 
    public:
-    BinaryMetadata(const std::string &path);
-    std::vector<ImportedFn> get_imports();
-    std::vector<ExportedFn> get_exports();
-    std::vector<std::pair<std::string, std::string>> get_general();
-    std::vector<std::pair<std::string, std::string>> get_dos();
-    std::vector<std::pair<std::string, std::string>> get_header();
+    BinaryMetadata(std::unique_ptr<LIEF::Binary> &binary);
 
    private:
-    std::unique_ptr<LIEF::Binary> _binary;
+    void parse_imports();
+    void parse_exports();
+    void parse_general();
+    void parse_dos();
+    void parse_header();
+
+   public:
+    std::vector<ExportedFn> exported_functions;
+    std::vector<ImportedFn> imported_functions;
+    std::vector<std::pair<std::string, std::string>> general_infos;
+    std::vector<std::pair<std::string, std::string>> file_headers;
+    std::vector<std::pair<std::string, std::string>> dos_headers;
     std::string _path;
+
+   private:
+    std::unique_ptr<LIEF::Binary> &_binary;
 };
