@@ -7,7 +7,6 @@
 #include "checksums/md5.h"
 
 const std::string compute_md5_from_file(const std::string_view path) {
-    std::cout << path << std::endl;
     std::ifstream file(path.data(), std::ios::binary);
     if (!file) {
         std::cerr << "Unable to open file" << std::endl;

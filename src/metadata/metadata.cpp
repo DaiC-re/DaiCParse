@@ -6,8 +6,9 @@
 
 #include "checksums/file_checksum.h"
 
-BinaryMetadata::BinaryMetadata(std::unique_ptr<LIEF::Binary>& binary)
-    : _binary(binary) {
+BinaryMetadata::BinaryMetadata(const std::unique_ptr<LIEF::Binary>& binary,
+                               const std::string& path)
+    : _binary(binary), _path(path) {
     this->parse_dos();
     this->parse_exports();
     this->parse_general();
