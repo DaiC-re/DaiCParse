@@ -30,8 +30,7 @@ Binary::Binary(const std::string path) {
     }
     for (auto& section : _lief_binary->sections()) {
         this->sections.push_back(Section{
-            section.name(),
-            contentToHex(section.virtual_address(), section.content())});
+            section.name(), contentToHex(section.offset(), section.content())});
     }
     metadata = std::make_unique<BinaryMetadata>(_lief_binary, path);
 }
