@@ -7,10 +7,10 @@
 #include <iostream>
 
 typedef enum: uint8_t {
-    Function = 0x01,
-    Variable = 0x02,
-    Call = 0x03,
-    Data = 0x04
+    function = 0x01,
+    variable = 0x02,
+    call = 0x03,
+    data = 0x04
 } DataType;
 
 class Metadata {
@@ -28,15 +28,16 @@ class IDataType: public Metadata {
     virtual ~IDataType() = default;
     virtual void serialize(std::ostream &out) const = 0;
     virtual void deserialize(std::istream &in) = 0;
-    std::string getType() const {
+    virtual void print() const = 0;
+    std::string getTypeString() const {
         switch (_type) {
-            case Function:
+            case function:
                 return "Function";
-            case Variable:
+            case variable:
                 return "Variable";
-            case Call:
+            case call:
                 return "Call";
-            case Data:
+            case data:
                 return "Data";
             default:
                 return "";
@@ -63,14 +64,15 @@ class Instruction: public Metadata {
         for (const auto& op : _op) std::cout << op << " ";
         std::cout << "\n";
     }
+
+    static void serializeOperands(const std::vector<std::string>& operands, std::ostream& out);
+    static void deserializeOperands(std::vector<std::string> &,std::istream &in);
    private:
     uint64_t _address;
     std::vector<uint8_t> _bytes;
     std::string _mnemo;
     std::vector<std::string> _op;
 
-    void serializeOperands(const std::vector<std::string>& operands, std::ostream& out) const;
-    void deserializeOperands(std::istream &in);
 };
 
 class Symbol: public IDataType {
@@ -85,13 +87,15 @@ class Symbol: public IDataType {
     void serialize(std::ostream &out) const override;
     void deserialize(std::istream &in) override;
 
-    void print() const {
+    void print() const override {
         std::cout << "Symbol: " << _name << " at 0x" << std::hex << _address
-                  << " [" << getType() << "]\n";
+                  << " [" << getTypeString() << "]\n";
     };
 
    private:
     uint64_t _address;
+
+   protected:
     std::string _name;
     DataType _type;
 };
@@ -100,7 +104,7 @@ class CrossReference: public IDataType {
    public:
     CrossReference() {};
     CrossReference(uint64_t fromAddress, uint64_t toAddress, DataType type)
-        : _fromAddress(fromAddress), _toAddress(toAddress) {};
+        : _fromAddress(fromAddress), _toAddress(toAddress), _type(type) {};
     ~CrossReference() {};
     void serialize(std::ostream &out) const override;
     void deserialize(std::istream &in) override;
@@ -108,6 +112,9 @@ class CrossReference: public IDataType {
     uint64_t getFromAddress() { return _fromAddress;};
     uint64_t getToAddress() { return _toAddress;};
 
+    void print() const override {
+
+    }
    private:
     uint64_t _fromAddress;
     uint64_t _toAddress;

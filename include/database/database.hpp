@@ -1,32 +1,36 @@
 #ifndef DATABASE_HPP
 #define DATABASE_HPP
 
-#include <BinaryFormat.hpp>
+#include <vector>
+#include <database/BinaryFormat.hpp>
+#include <database/Symbol.hpp>
 
 class Header {
    private:
-    std::string _projectName;
-    std::string _version;
+    std::vector<std::pair<std::string, std::string>> general_infos;
+    std::vector<std::pair<std::string, std::string>> file_headers;
+    std::vector<std::pair<std::string, std::string>> dos_headers;
+
    public:
     Header() {};
-    Header(std::string projectName, std::string version)
-        : _projectName(projectName), _version(version) {}
+    Header(std::istream &in) { deserialize(in); }
     ~Header() {}
-    std::string getProjectName() const { return _projectName;};
-    std::string getVersion() const { return _version;};
 
     void serialize(std::ostream &out) const;
-    static Header deserialize(std::istream &in, uint32_t projectNameSize, uint32_t versionSize);
+    void serializePairs(std::vector<std::pair<std::string, std::string>>, std::ostream &out) const;
+
+    Header deserialize(std::istream &in);
+    void deserializePairs(std::vector<std::pair<std::string, std::string>> &, std::istream &in);
 };
 
 struct FileHeader {
-    uint32_t projectNameSize;
-    uint32_t versionSize;
-
+    // Binary
     uint64_t instructionOffset;
     uint64_t instructionSize;
     uint64_t symbolOffset;
     uint64_t symbolSize;
+    uint64_t xrefOffset;
+    uint64_t xrefSize;
 
     void serialize(std::ostream &out) const;
     void deserialize(std::istream &in);
@@ -45,7 +49,9 @@ class Database {
 
     Header getMetadata() const { return _metadata;};
     std::vector<Instruction> getInstructions() const { return _instructions;}
+
     std::vector<Symbol> getSymbols() const { return _symbols;}
+
     std::vector<CrossReference> getXRefs() const { return _xrefs;}
 
     void addInstruction(const Instruction &instr) { _instructions.push_back(instr);};

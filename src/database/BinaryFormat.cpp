@@ -1,4 +1,4 @@
-#include <BinaryFormat.hpp>
+#include <database/BinaryFormat.hpp>
 
 void Instruction::serialize(std::ostream &out) const
 {
@@ -12,10 +12,10 @@ void Instruction::serialize(std::ostream &out) const
     out.write(reinterpret_cast<const char*>(&mnemonicSize), sizeof(mnemonicSize));
     out.write(_mnemo.data(), mnemonicSize);
 
-    serializeOperands(_op, out);
+    Instruction::serializeOperands(_op, out);
 }
 
-void Instruction::serializeOperands(const std::vector<std::string>& operands, std::ostream& out) const
+void Instruction::serializeOperands(const std::vector<std::string>& operands, std::ostream& out)
 {
     uint32_t numOperands = operands.size();
     out.write(reinterpret_cast<const char*>(&numOperands), sizeof(numOperands));
@@ -41,10 +41,10 @@ void Instruction::deserialize(std::istream &in)
     _mnemo.resize(mnemonicSize);
     in.read(_mnemo.data(), mnemonicSize);
 
-    deserializeOperands(in);
+    Instruction::deserializeOperands(_op, in);
 }
 
-void Instruction::deserializeOperands(std::istream &in)
+void Instruction::deserializeOperands(std::vector<std::string> &_op, std::istream &in)
 {
     try {
     uint32_t numOperands;
