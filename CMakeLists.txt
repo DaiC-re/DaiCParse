@@ -66,7 +66,7 @@ if(BUILD_TESTING)
     md5_test
   )
   foreach(TEST_CASE ${TEST_CASES})
-    add_executable(${TEST_CASE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TEST_CASE}.cpp "src/binary/binary.cpp")
+    add_executable(${TEST_CASE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TEST_CASE}.cpp)
     target_link_libraries(${TEST_CASE} PRIVATE ${TARGET_NAME} Catch2::Catch2WithMain)
     target_compile_options(${TEST_CASE} PRIVATE ${compiler_options})
     target_compile_definitions(${TEST_CASE} PRIVATE ${compiler_definitions} $<$<BOOL:${OPENSSL_FOUND}>:WITH_OPENSSL>)
