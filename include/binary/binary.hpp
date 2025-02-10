@@ -10,8 +10,14 @@ class Binary {
     ~Binary();
     void get_bytes();
 
+    struct Section {
+        std::string name;
+        std::string content;
+    };
+
    public:
-    std::unique_ptr<BinaryMetadata> _metadata;
+    std::unique_ptr<BinaryMetadata> metadata;
+    std::vector<Section> sections;
 
    private:
     std::unique_ptr<LIEF::Binary> _lief_binary;
