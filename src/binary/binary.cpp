@@ -35,4 +35,9 @@ Binary::Binary(const std::string path) {
     metadata = std::make_unique<BinaryMetadata>(_lief_binary, path);
 }
 
+Binary::Binary(std::istream &in)
+{
+    metadata = std::make_unique<BinaryMetadata>(_lief_binary, in);
+}
+
 Binary::~Binary() {}

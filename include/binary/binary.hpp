@@ -6,6 +6,8 @@
 
 class Binary {
    public:
+    Binary() {};
+    Binary(std::istream &in);
     Binary(const std::string path);
     ~Binary();
     void get_bytes();

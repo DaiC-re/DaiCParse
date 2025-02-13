@@ -1,5 +1,7 @@
 #include <database/database.hpp>
 #include <fstream>
+#include <filesystem>
+#include <format>
 
 void FileHeader::serialize(std::ostream &out) const
 {
@@ -21,60 +23,6 @@ void FileHeader::deserialize(std::istream &in)
     in.read(reinterpret_cast<char*>(&xrefOffset), sizeof(xrefOffset));
 }
 
-void Header::serialize(std::ostream &out) const
-{
-    serializePairs(this->general_infos, out);
-    serializePairs(this->file_headers, out);
-    serializePairs(this->dos_headers, out);
-}
-
-Header Header::deserialize(std::istream &in)
-{
-    Header header;
-
-    deserializePairs(this->general_infos, in);
-    deserializePairs(this->file_headers, in);
-    deserializePairs(this->dos_headers, in);
-
-    return header;
-}
-
-void serializePairs(std::vector<std::pair<std::string, std::string>> metadata_vector, std::ostream &out)
-{
-    uint32_t numPairs = metadata_vector.size();
-    out.write(reinterpret_cast<const char*>(&numPairs), sizeof(numPairs));
-
-    for (const auto &pair : metadata_vector) {
-        uint32_t firstStringSize = pair.first.size();
-        out.write(reinterpret_cast<const char*>(&firstStringSize), sizeof(firstStringSize));
-        out.write(pair.first.data(), firstStringSize);
-        uint32_t secondStringSize = pair.first.size();
-        out.write(reinterpret_cast<const char*>(&secondStringSize), sizeof(secondStringSize));
-        out.write(pair.second.data(), secondStringSize);
-    }
-}
-
-void deserializePairs(std::vector<std::pair<std::string, std::string>> &metadata_vector, std::istream &in)
-{
-    try {
-        uint32_t numPairs;
-        in.read(reinterpret_cast<char*>(&numPairs), sizeof(numPairs));
-        //std::cout << "Number of operands: " << numOperands << std::endl;
-        metadata_vector.resize(numPairs);
-        for (auto &pair: metadata_vector) {
-            uint32_t firstStringSize;
-            in.read(reinterpret_cast<char*>(&firstStringSize), sizeof(firstStringSize));
-            pair.first.resize(firstStringSize);
-            in.read(pair.first.data(), firstStringSize);
-
-            uint32_t secondStringSize;
-            in.read(reinterpret_cast<char*>(&secondStringSize), sizeof(secondStringSize));
-            pair.second.resize(secondStringSize);
-            in.read(pair.second.data(), secondStringSize);
-        }
-    } catch (std::bad_alloc &ba) {}
-}
-
 template <typename Data>
 void Database::serializeData(Data &datas, std::ostream &out, uint64_t &offset, uint64_t &size) const
 {
@@ -87,9 +35,23 @@ void Database::serializeData(Data &datas, std::ostream &out, uint64_t &offset, u
     }
 }
 
-void Database::serialize(const std::string &filepath) const
+void Database::createProject(const std::string &path) {
+    _path = path;
+    std::filesystem::path p = _path;
+    if (std::filesystem::exists(p)) {
+        std::cout << "Project already exist" << p << std::endl;
+    } else {
+        std::filesystem::create_directory(_path);
+    }
+}
+
+void Database::serialize() const
 {
-    std::ofstream out(filepath, std::ios::binary);
+    std::filesystem::path p = _path;
+    if (!std::filesystem::exists(p)) {
+        std::cout << "Project does not exists" << p << std::endl;
+    }
+    std::ofstream out(std::format("{}/1.db", _path), std::ios::binary);
     if (!out)
         throw std::runtime_error("Failed to open file for writing");
     FileHeader fHeader;
@@ -97,7 +59,7 @@ void Database::serialize(const std::string &filepath) const
     std::streampos headerPos = out.tellp();
     out.seekp(sizeof(FileHeader), std::ios::cur);
 
-    _metadata.serialize(out);
+    _binary->metadata->serialize(out);
     serializeData(_instructions, out, fHeader.instructionOffset, fHeader.instructionSize);
     serializeData(_symbols, out, fHeader.symbolOffset, fHeader.symbolSize);
     serializeData(_xrefs, out, fHeader.xrefOffset, fHeader.xrefSize);
@@ -119,17 +81,21 @@ void Database::deserializeData(std::vector<Data> &datas, std::istream &in, uint6
     }
 }
 
-Database Database::deserialize(const std::string &filepath)
+Database Database::deserialize(const std::string &filepath, std::unique_ptr<Binary> &binary)
 {
-    std::ifstream in(filepath, std::ios::binary);
+    std::filesystem::path p = filepath;
+    if (!std::filesystem::exists(p)) {
+        std::cout << "Project does not exist: " << p << std::endl;
+    }
+    std::ifstream in(std::format("{}/1.db", filepath), std::ios::binary);
     if (!in)
         throw std::runtime_error("Failed to open file for reading");
     FileHeader fHeader;
     fHeader.deserialize(in);
 
-    Header metadata(in);
-    Database db(metadata);
+    binary = std::make_unique<Binary>(in);
 
+    Database db(binary);
     deserializeData(db._instructions, in, fHeader.instructionOffset, fHeader.instructionSize);
     deserializeData(db._symbols, in, fHeader.symbolOffset, fHeader.symbolSize);
     deserializeData(db._xrefs, in, fHeader.xrefOffset, fHeader.xrefSize);

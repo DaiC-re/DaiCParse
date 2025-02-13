@@ -4,24 +4,8 @@
 #include <vector>
 #include <database/BinaryFormat.hpp>
 #include <database/Symbol.hpp>
-
-class Header {
-   private:
-    std::vector<std::pair<std::string, std::string>> general_infos;
-    std::vector<std::pair<std::string, std::string>> file_headers;
-    std::vector<std::pair<std::string, std::string>> dos_headers;
-
-   public:
-    Header() {};
-    Header(std::istream &in) { deserialize(in); }
-    ~Header() {}
-
-    void serialize(std::ostream &out) const;
-    void serializePairs(std::vector<std::pair<std::string, std::string>>, std::ostream &out) const;
-
-    Header deserialize(std::istream &in);
-    void deserializePairs(std::vector<std::pair<std::string, std::string>> &, std::istream &in);
-};
+#include <metadata/metadata.hpp>
+#include <binary/binary.hpp>
 
 struct FileHeader {
     // Binary
@@ -38,31 +22,34 @@ struct FileHeader {
 
 class Database {
    private:
-    Header _metadata;
+    std::unique_ptr<Binary> &_binary;
     std::vector<Instruction> _instructions;
     std::vector<Symbol> _symbols;
     std::vector<CrossReference> _xrefs;
 
+    std::string _path;
    public:
-    Database(Header metadata): _metadata(metadata) {};
+    Database(std::unique_ptr<Binary> &binary): _binary(binary) {};
     ~Database() {}
 
-    Header getMetadata() const { return _metadata;};
+    std::unique_ptr<BinaryMetadata> &getMetadata() const { return _binary->metadata;};
     std::vector<Instruction> getInstructions() const { return _instructions;}
 
     std::vector<Symbol> getSymbols() const { return _symbols;}
 
     std::vector<CrossReference> getXRefs() const { return _xrefs;}
 
+    void createProject(const std::string &path);
     void addInstruction(const Instruction &instr) { _instructions.push_back(instr);};
     void addSymbol(const Symbol &sym) { _symbols.push_back(sym);};
     void addXRefs(const CrossReference &xref) { _xrefs.push_back(xref);};
 
-    void serialize(const std::string &filepath) const;
+    void serialize() const;
     template <typename Data>
     void serializeData(Data &datas, std::ostream &out, uint64_t &offset, uint64_t &size) const;
 
-    static Database deserialize(const std::string &filepath);
+    static Database deserialize(const std::string &filepath, std::unique_ptr<Binary> &binary);
+
     template <typename Data>
     static void deserializeData(std::vector<Data> &datas, std::istream &in, uint64_t &offset, uint64_t &size);
 };
