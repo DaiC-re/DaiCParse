@@ -95,7 +95,7 @@ Database Database::deserialize(const std::string &filepath, std::unique_ptr<Bina
 
     binary = std::make_unique<Binary>(in);
 
-    Database db(binary);
+    Database db(binary, filepath);
     deserializeData(db._instructions, in, fHeader.instructionOffset, fHeader.instructionSize);
     deserializeData(db._symbols, in, fHeader.symbolOffset, fHeader.symbolSize);
     deserializeData(db._xrefs, in, fHeader.xrefOffset, fHeader.xrefSize);

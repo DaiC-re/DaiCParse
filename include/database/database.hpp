@@ -30,6 +30,7 @@ class Database {
     std::string _path;
    public:
     Database(std::unique_ptr<Binary> &binary): _binary(binary) {};
+    Database(std::unique_ptr<Binary> &binary, const std::string &path): _binary(binary), _path(path) {};
     ~Database() {}
 
     std::unique_ptr<BinaryMetadata> &getMetadata() const { return _binary->metadata;};
