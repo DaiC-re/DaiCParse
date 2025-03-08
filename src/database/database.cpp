@@ -60,7 +60,8 @@ void Database::serialize() const
     out.seekp(sizeof(FileHeader), std::ios::cur);
 
     _binary->metadata->serialize(out);
-    serializeData(_instructions, out, fHeader.instructionOffset, fHeader.instructionSize);
+    serializeData(_binary->sections, out, fHeader.instructionOffset, fHeader.instructionSize);
+    //serializeData(_instructions, out, fHeader.instructionOffset, fHeader.instructionSize);
     serializeData(_symbols, out, fHeader.symbolOffset, fHeader.symbolSize);
     serializeData(_xrefs, out, fHeader.xrefOffset, fHeader.xrefSize);
 
@@ -96,7 +97,7 @@ Database Database::deserialize(const std::string &filepath, std::unique_ptr<Bina
     binary = std::make_unique<Binary>(in);
 
     Database db(binary, filepath);
-    deserializeData(db._instructions, in, fHeader.instructionOffset, fHeader.instructionSize);
+    deserializeData(db._binary->sections, in, fHeader.instructionOffset, fHeader.instructionSize);
     deserializeData(db._symbols, in, fHeader.symbolOffset, fHeader.symbolSize);
     deserializeData(db._xrefs, in, fHeader.xrefOffset, fHeader.xrefSize);
     in.close();

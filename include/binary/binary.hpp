@@ -15,6 +15,9 @@ class Binary {
     struct Section {
         std::string name;
         std::string content;
+
+        void serialize(std::ostream &out) const;
+        void deserialize(std::istream &in);
     };
 
    public:

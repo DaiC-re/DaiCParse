@@ -41,3 +41,25 @@ Binary::Binary(std::istream &in)
 }
 
 Binary::~Binary() {}
+
+void Binary::Section::serialize(std::ostream &out) const {
+    uint32_t nameSize = name.size();
+    out.write(reinterpret_cast<const char*>(&nameSize), sizeof(nameSize));
+    out.write(name.data(), nameSize);
+
+    uint32_t contentSize = content.size();
+    out.write(reinterpret_cast<const char*>(&contentSize), sizeof(contentSize));
+    out.write(content.data(), contentSize);
+}
+
+void Binary::Section::deserialize(std::istream &in) {
+    uint32_t nameSize;
+    in.read(reinterpret_cast<char*>(&nameSize), sizeof(nameSize));
+    name.resize(nameSize);
+    in.read(name.data(), nameSize);
+
+    uint32_t contentSize;
+    in.read(reinterpret_cast<char*>(&contentSize), sizeof(contentSize));
+    content.resize(contentSize);
+    in.read(content.data(), contentSize);
+}
