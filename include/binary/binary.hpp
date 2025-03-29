@@ -5,6 +5,9 @@
 #include "metadata/metadata.hpp"
 
 class Binary {
+    friend class SectionContentIterator;
+    friend class SectionContentRange;
+
    public:
     Binary(const std::string path);
     ~Binary();
