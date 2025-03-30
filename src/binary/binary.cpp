@@ -1,9 +1,9 @@
 #include "binary/binary.hpp"
 
+#include <LIEF/ELF.hpp>
+#include <LIEF/MachO.hpp>
 #include <LIEF/PE.hpp>
 #include <iostream>
-#include <lief/ELF.hpp>
-#include <lief/MachO.hpp>
 
 Binary::Binary(const std::string path) {
     _lief_binary = LIEF::Parser::parse(path);
