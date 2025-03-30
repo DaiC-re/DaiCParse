@@ -1,95 +1,92 @@
+#pragma once
+
+#include <LIEF/span.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
 #include <iterator>
-#include <optional>
-#include <ranges>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
-#include "binary.hpp"
+struct BinSection {
+    std::string name;
+    LIEF::span<const uint8_t> content;
 
-class SectionContentIterator {
-   public:
-    using iterator_category = std::forward_iterator_tag;
-    using difference_type = std::ptrdiff_t;
-    using value_type = uint8_t;  // Iterate over bytes
-    using pointer = const uint8_t*;
+    class SectionIterator;
+
+    using iterator = SectionIterator;
+    using const_iterator = SectionIterator;
+    using value_type = uint8_t;
     using reference = const uint8_t&;
+    using const_reference = const uint8_t&;
 
-    SectionContentIterator()
-        : _sections(std::nullopt),  // Initialize pointer
-                                    // members to null
-          _sectionIndex(0),
-          _byteIndex(0),
-          _currentSectionData() {}
+    class SectionIterator {
+       public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = uint8_t;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const uint8_t*;
+        using reference = const uint8_t&;
 
-    SectionContentIterator(const std::unique_ptr<Binary>& binary,
-                           size_t sectionIndex = 0, size_t byteIndex = 0)
-        : _sections(binary->_lief_binary->sections()),
-          _sectionIndex(sectionIndex),
-          _byteIndex(byteIndex) {
-        if (_sectionIndex < _sections->size()) {
-            _currentSectionData = (*_sections)[_sectionIndex].content();
-        } else {
-            _currentSectionData = {};  // Empty vector for end iterator
-        }
+       protected:
+        const BinSection* _section = nullptr;
+        bool _iterating_name = true;
+        std::size_t _name_index = 0;
+        LIEF::span<const uint8_t>::iterator _content_iter;
+
+       public:
+        SectionIterator() = default;
+
+        explicit SectionIterator(const BinSection& section);
+
+        SectionIterator(const BinSection* section, bool is_end);
+
+        reference operator*() const;
+
+        pointer operator->() const;
+
+        SectionIterator& operator++();
+
+        SectionIterator operator++(int);
+
+        friend inline bool operator==(const SectionIterator& lhs,
+                                      const SectionIterator& rhs);
+
+        friend inline bool operator!=(const SectionIterator& lhs,
+                                      const SectionIterator& rhs);
+    };
+
+    inline BinSection::iterator begin() const { return SectionIterator(*this); }
+
+    inline BinSection::iterator end() const {
+        return SectionIterator(this, true);
     }
 
-    reference operator*() const { return _currentSectionData[_byteIndex]; }
-    pointer operator->() const {
-        return const_cast<uint8_t*>(&_currentSectionData[_byteIndex]);
-    }
-
-    SectionContentIterator& operator++() {
-        ++_byteIndex;
-        auto sections = *_sections;
-        if (_sectionIndex < sections.size() &&
-            _byteIndex >= _currentSectionData.size()) {
-            ++_sectionIndex;
-            if (_sectionIndex < sections.size()) {
-                _currentSectionData = sections[_sectionIndex].content();
-                _byteIndex = 0;
-            } else {
-                _currentSectionData = {};
-            }
-        }
-
-        return *this;
-    }
-
-    SectionContentIterator operator++(int) {
-        SectionContentIterator temp = *this;
-        ++(*this);
-        return temp;
-    }
-
-    bool operator==(const SectionContentIterator& other) const {
-        return &_sections == &other._sections &&
-               _sectionIndex == other._sectionIndex &&
-               _byteIndex == other._byteIndex;
-    }
-
-    bool operator!=(const SectionContentIterator& other) const {
-        return !(*this == other);
-    }
-
-   private:
-    std::optional<LIEF::Binary::it_sections> _sections;
-    size_t _sectionIndex;
-    size_t _byteIndex;
-    LIEF::span<const uint8_t> _currentSectionData;
+    inline std::size_t size() const { return name.size() + content.size(); }
 };
 
-class SectionContentRange {
-   public:
-    SectionContentRange(const std::unique_ptr<Binary>& binary)
-        : _binary(binary) {}
-
-    SectionContentIterator begin() const {
-        return SectionContentIterator(_binary);
+inline bool operator==(const BinSection::SectionIterator& lhs,
+                       const BinSection::SectionIterator& rhs) {
+    if (lhs._section != rhs._section) {
+        return false;
+    }
+    if (!lhs._section) {
+        return true;
     }
 
-    SectionContentIterator end() const {
-        return SectionContentIterator(
-            _binary, _binary->_lief_binary->sections().size());  // End iterator
+    if (lhs._iterating_name != rhs._iterating_name) {
+        return false;
     }
 
-   private:
-    const std::unique_ptr<Binary>& _binary;
-};
+    if (lhs._iterating_name) {
+        return lhs._name_index == rhs._name_index;
+    } else {
+        return lhs._content_iter == rhs._content_iter;
+    }
+}
+
+inline bool operator!=(const BinSection::SectionIterator& lhs,
+                       const BinSection::SectionIterator& rhs) {
+    return !(lhs == rhs);
+}

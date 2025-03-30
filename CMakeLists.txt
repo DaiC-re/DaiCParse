@@ -3,7 +3,7 @@
 #####################################
 set(TARGET_NAME DaiCLib)
 set(TARGET_INCLUDE_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(TARGET_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/md5.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/file_checksum.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/metadata/metadata.cpp
+set(TARGET_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/md5.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/file_checksum.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/metadata/metadata.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/binary/hex_iterator.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/src/binary/binary.cpp)
 
 #####################################
@@ -64,6 +64,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC LIEF::LIEF)
 if(BUILD_TESTING)
   list(APPEND TEST_CASES
     md5_test
+    hex_iterator_test
   )
   foreach(TEST_CASE ${TEST_CASES})
     add_executable(${TEST_CASE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TEST_CASE}.cpp)
