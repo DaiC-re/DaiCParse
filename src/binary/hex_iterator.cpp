@@ -5,6 +5,8 @@
 #include <sstream>
 #include <string_view>
 
+#include "binary/binary.hpp"
+
 BinSection::SectionIterator::SectionIterator(const BinSection* section,
                                              bool is_end)
     : _section(section), _content_iter(nullptr) {
@@ -71,4 +73,38 @@ BinSection::SectionIterator BinSection::SectionIterator::operator++(int) {
     SectionIterator temp = *this;
     ++(*this);
     return temp;
+}
+
+void BinSection::serialize(std::ostream& out) const {
+    uint32_t nameSize = name.size();
+    out.write(reinterpret_cast<const char*>(&nameSize), sizeof(nameSize));
+    out.write(name.data(), nameSize);
+
+    uint32_t contentSize = content.size();
+    out.write(reinterpret_cast<const char*>(&contentSize), sizeof(contentSize));
+    std::string data_hexed =
+        contentToHex(0, std::ranges::subrange(begin(), end()));
+    out.write(data_hexed.data(), contentSize);
+}
+
+void BinSection::deserialize(std::istream& in) {
+    uint32_t nameSize;
+    in.read(reinterpret_cast<char*>(&nameSize), sizeof(nameSize));
+    name.resize(nameSize);
+    in.read(name.data(), nameSize);
+
+    uint32_t contentSize;
+    in.read(reinterpret_cast<char*>(&contentSize), sizeof(contentSize));
+    // We should allow it to work like if it's from LIEF later, for example with
+    // mmap, here the whole section is loaded in memory
+    _buffer_ptr = new uint8_t[contentSize];
+    in.read(reinterpret_cast<char*>(_buffer_ptr), contentSize);
+    content = LIEF::span(_buffer_ptr, contentSize);
+}
+
+BinSection::~BinSection() {
+    // In case the content was deserialized
+    if (_buffer_ptr) {
+        delete[] _buffer_ptr;
+    }
 }

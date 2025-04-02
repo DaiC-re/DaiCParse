@@ -12,9 +12,18 @@
 struct BinSection {
     std::string name;
     LIEF::span<const uint8_t> content;
-
+    void serialize(std::ostream& out) const;
+    void deserialize(std::istream& in);
     class SectionIterator;
+    BinSection(std::string name, LIEF::span<const uint8_t> content)
+        : name(name), content(content) {}
+    BinSection() = default;
+    ~BinSection();
 
+   private:
+    uint8_t* _buffer_ptr = nullptr;
+
+   public:
     using iterator = SectionIterator;
     using const_iterator = SectionIterator;
     using value_type = uint8_t;
