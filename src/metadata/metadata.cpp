@@ -129,3 +129,147 @@ void BinaryMetadata::parse_dos() {
                     dos_header.addressof_new_exeheader());
     }
 }
+
+BinaryMetadata::BinaryMetadata(const std::unique_ptr<LIEF::Binary>& binary, std::istream &in)
+    : _binary(binary)
+{
+    deserialize(in);
+}
+
+void BinaryMetadata::serialize(std::ostream &out) const
+{
+    uint32_t pathSize = _path.size();
+    out.write(reinterpret_cast<const char*>(&pathSize), sizeof(pathSize));
+    out.write(_path.data(), pathSize);
+
+    serializePairs(this->general_infos, out);
+    serializePairs(this->file_headers, out);
+    serializePairs(this->dos_headers, out);
+    this->serializeExported(exported_functions, out);
+    this->serializeImported(imported_functions, out);
+}
+
+void BinaryMetadata::deserialize(std::istream &in)
+{
+    uint32_t pathSize;
+    in.read(reinterpret_cast<char*>(&pathSize), sizeof(pathSize));
+    _path.resize(pathSize);
+    in.read(_path.data(), pathSize);
+
+    deserializePairs(this->general_infos, in);
+    deserializePairs(this->file_headers, in);
+    deserializePairs(this->dos_headers, in);
+    this->deserializeExported(exported_functions, in);
+    this->deserializeImported(imported_functions, in);
+}
+
+void BinaryMetadata::serializePairs(std::vector<std::pair<std::string, std::string>> metadata_vector, std::ostream &out) const
+{
+    uint32_t numPairs = metadata_vector.size();
+    out.write(reinterpret_cast<const char*>(&numPairs), sizeof(numPairs));
+
+    for (const auto &pair : metadata_vector) {
+        uint32_t firstStringSize = pair.first.size();
+        out.write(reinterpret_cast<const char*>(&firstStringSize), sizeof(firstStringSize));
+        out.write(pair.first.data(), firstStringSize);
+
+        uint32_t secondStringSize = pair.second.size();
+        out.write(reinterpret_cast<const char*>(&secondStringSize), sizeof(secondStringSize));
+        out.write(pair.second.data(), secondStringSize);
+    }
+}
+
+void BinaryMetadata::deserializePairs(std::vector<std::pair<std::string, std::string>> &metadata_vector, std::istream &in)
+{
+    try {
+        uint32_t numPairs;
+        in.read(reinterpret_cast<char*>(&numPairs), sizeof(numPairs));
+
+        metadata_vector.resize(numPairs);
+        for (auto &pair: metadata_vector) {
+            uint32_t firstStringSize;
+            in.read(reinterpret_cast<char*>(&firstStringSize), sizeof(firstStringSize));
+            pair.first.resize(firstStringSize);
+            in.read(pair.first.data(), firstStringSize);
+
+            uint32_t secondStringSize;
+            in.read(reinterpret_cast<char*>(&secondStringSize), sizeof(secondStringSize));
+            pair.second.resize(secondStringSize);
+            in.read(pair.second.data(), secondStringSize);
+        }
+    } catch (std::bad_alloc &ba) {}
+}
+
+void BinaryMetadata::serializeExported(std::vector<ExportedFn> exported, std::ostream &out) const
+{
+    uint32_t numFn = exported.size();
+    out.write(reinterpret_cast<const char*>(&numFn), sizeof(numFn));
+
+    for (const auto &fn : exported) {
+        uint32_t addressSize = fn.address.size();
+        out.write(reinterpret_cast<const char*>(&addressSize), sizeof(addressSize));
+        out.write(fn.address.data(), addressSize);
+        uint32_t nameSize = fn.fonction_name.size();
+        out.write(reinterpret_cast<const char*>(&nameSize), sizeof(nameSize));
+        out.write(fn.fonction_name.data(), nameSize);
+    }
+}
+
+void BinaryMetadata::deserializeExported(std::vector<ExportedFn> &exported, std::istream &in)
+{
+    try {
+        uint32_t numFn;
+        in.read(reinterpret_cast<char*>(&numFn), sizeof(numFn));
+
+        exported.resize(numFn);
+        for (auto &fn: exported) {
+            uint32_t addressSize;
+            in.read(reinterpret_cast<char*>(&addressSize), sizeof(addressSize));
+            fn.address.resize(addressSize);
+            in.read(fn.address.data(), addressSize);
+
+            uint32_t nameSize;
+            in.read(reinterpret_cast<char*>(&nameSize), sizeof(nameSize));
+            fn.fonction_name.resize(nameSize);
+            in.read(fn.fonction_name.data(), nameSize);
+        }
+    } catch (std::bad_alloc &ba) {}
+}
+
+void BinaryMetadata::serializeImported(std::vector<ImportedFn> imported, std::ostream &out) const
+{
+    uint32_t numFn = imported.size();
+    out.write(reinterpret_cast<const char*>(&numFn), sizeof(numFn));
+
+    for (const auto &fn : imported) {
+        out.write(reinterpret_cast<const char*>(&fn.offset), sizeof(fn.offset));
+        uint32_t filenameSize = fn.file_name.size();
+        out.write(reinterpret_cast<const char*>(&filenameSize), sizeof(filenameSize));
+        out.write(fn.file_name.data(), filenameSize);
+        uint32_t nameSize = fn.fonction_name.size();
+        out.write(reinterpret_cast<const char*>(&nameSize), sizeof(nameSize));
+        out.write(fn.fonction_name.data(), nameSize);
+    }
+}
+
+void BinaryMetadata::deserializeImported(std::vector<ImportedFn> &imported, std::istream &in)
+{
+    try {
+        uint32_t numFn;
+        in.read(reinterpret_cast<char*>(&numFn), sizeof(numFn));
+
+        imported.resize(numFn);
+        for (auto &fn: imported) {
+            in.read(reinterpret_cast<char*>(&fn.offset), sizeof(fn.offset));
+            uint32_t filenameSize;
+            in.read(reinterpret_cast<char*>(&filenameSize), sizeof(filenameSize));
+            fn.file_name.resize(filenameSize);
+            in.read(fn.file_name.data(), filenameSize);
+
+            uint32_t nameSize;
+            in.read(reinterpret_cast<char*>(&nameSize), sizeof(nameSize));
+            fn.fonction_name.resize(nameSize);
+            in.read(fn.fonction_name.data(), nameSize);
+        }
+    } catch (std::bad_alloc &ba) {}
+}

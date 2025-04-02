@@ -16,6 +16,7 @@ class BinaryMetadata {
     };
 
    public:
+    BinaryMetadata(const std::unique_ptr<LIEF::Binary>& binary, std::istream &in);
     BinaryMetadata(const std::unique_ptr<LIEF::Binary>& binary,
                    const std::string& path);
     std::vector<std::pair<std::string, std::string>> get_dos() {
@@ -29,6 +30,16 @@ class BinaryMetadata {
     std::vector<std::pair<std::string, std::string>> get_header() {
         return this->file_headers;
     }
+
+    void serialize(std::ostream &out) const;
+    void serializePairs(std::vector<std::pair<std::string, std::string>>, std::ostream &out) const;
+    void serializeExported(std::vector<ExportedFn>, std::ostream &out) const;
+    void serializeImported(std::vector<ImportedFn>, std::ostream &out) const;
+
+    void deserialize(std::istream &in);
+    void deserializePairs(std::vector<std::pair<std::string, std::string>> &, std::istream &in);
+    void deserializeExported(std::vector<ExportedFn> &, std::istream &in);
+    void deserializeImported(std::vector<ImportedFn> &, std::istream &in);
 
    private:
     void parse_dos();
