@@ -24,11 +24,16 @@ struct BinSection {
     uint8_t* _buffer_ptr = nullptr;
 
    public:
-    using iterator = SectionIterator;
-    using const_iterator = SectionIterator;
+    using iterator = decltype(content)::iterator;
+    using const_iterator = decltype(content)::iterator;
     using value_type = uint8_t;
     using reference = const uint8_t&;
     using const_reference = const uint8_t&;
+
+    iterator begin() { return content.begin(); }
+    iterator end() { return content.end(); }
+    const_iterator begin() const { return content.begin(); }
+    const_iterator end() const { return content.end(); }
 
     class SectionIterator {
        public:
@@ -66,11 +71,12 @@ struct BinSection {
                                       const SectionIterator& rhs);
     };
 
-    inline BinSection::iterator begin() const { return SectionIterator(*this); }
+    // inline BinSection::iterator begin() const { return
+    // SectionIterator(*this); }
 
-    inline BinSection::iterator end() const {
-        return SectionIterator(this, true);
-    }
+    // inline BinSection::iterator end() const {
+    //     return SectionIterator(this, true);
+    // }
 
     inline std::size_t size() const { return name.size() + content.size(); }
 };

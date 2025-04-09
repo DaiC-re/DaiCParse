@@ -83,7 +83,7 @@ void BinSection::serialize(std::ostream& out) const {
     uint32_t contentSize = content.size();
     out.write(reinterpret_cast<const char*>(&contentSize), sizeof(contentSize));
     std::string data_hexed =
-        contentToHex(0, std::ranges::subrange(begin(), end()));
+        contentToHex(0, std::ranges::subrange(content.begin(), content.end()));
     out.write(data_hexed.data(), contentSize);
 }
 
@@ -105,6 +105,6 @@ void BinSection::deserialize(std::istream& in) {
 BinSection::~BinSection() {
     // In case the content was deserialized
     if (_buffer_ptr) {
-        delete[] _buffer_ptr;
+        // delete _buffer_ptr;
     }
 }
