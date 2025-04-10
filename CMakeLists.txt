@@ -63,6 +63,7 @@ if(OPENSSL_FOUND)
   target_link_libraries(${TARGET_NAME} PUBLIC OpenSSL::SSL OpenSSL::Crypto)
 endif()
 target_link_libraries(${TARGET_NAME} PUBLIC LIEF::LIEF)
+target_link_libraries(${TARGET_NAME} PUBLIC capstone)
 
 if(BUILD_TESTING)
   list(APPEND TEST_CASES
