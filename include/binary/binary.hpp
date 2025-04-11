@@ -1,5 +1,8 @@
 #pragma once
+#include <capstone/capstone.h>
+
 #include <LIEF/ELF/Binary.hpp>
+#include <format>
 #include <iomanip>
 #include <iostream>
 #include <ranges>
@@ -12,11 +15,32 @@
 
 class Binary {
    public:
-    Binary() {};
-    Binary(std::istream &in);
+    Binary() : _capstone_handle(0){};
+    Binary(std::istream& in);
     Binary(const std::string path);
     ~Binary();
-    void get_bytes();
+
+    template <typename Range>
+    requires std::ranges::range<Range> std::string contentToDisasm(
+        const uintptr_t base_addr, const Range& view) {
+        std::stringstream disasm_stream;
+        std::vector<uint8_t> bytes_vec(view.begin(), view.end());
+        cs_insn* insn;
+        size_t count = cs_disasm(_capstone_handle, bytes_vec.data(),
+                                 bytes_vec.size() - 1, 0x1000, 0, &insn);
+        if (count > 0) {
+            size_t j;
+            for (j = 0; j < count; j++) {
+                disasm_stream
+                    << std::format("0x{:016X}:\t{}\t\t{}\n", insn[j].address,
+                                   insn[j].mnemonic, insn[j].op_str);
+            }
+
+            cs_free(insn, count);
+        } else
+            printf("ERROR: Failed to disassemble given code!\n");
+        return disasm_stream.str();
+    }
 
    public:
     std::unique_ptr<BinaryMetadata> metadata;
@@ -24,6 +48,7 @@ class Binary {
 
    private:
     std::unique_ptr<LIEF::Binary> _lief_binary;
+    csh _capstone_handle;
 };
 
 template <typename Range>
@@ -34,12 +59,10 @@ requires std::ranges::range<Range> std::string contentToHex(
     size_t i = 0;
     for (const auto& byte : view) {
         if (i % 16 == 0) {
-            hex_stream << std::hex << std::uppercase << std::setw(8)
-                       << std::setfill('0') << base_addr + i << ": ";
+            hex_stream << std::format("{:08X}: ", base_addr + i);
         }
 
-        hex_stream << std::hex << std::uppercase << std::setw(2)
-                   << std::setfill('0') << static_cast<int>(byte) << " ";
+        hex_stream << std::format("{:02X} ", static_cast<int>(byte));
 
         if ((i + 1) % 16 == 0) {
             hex_stream << "\n";
