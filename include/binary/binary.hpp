@@ -24,7 +24,9 @@ class Binary {
     requires std::ranges::range<Range> std::string contentToDisasm(
         const uintptr_t base_addr, const Range& view) {
         std::stringstream disasm_stream;
-        std::vector<uint8_t> bytes_vec(view.begin(), view.end());
+        std::vector<uint8_t> bytes_vec =
+            view | std::ranges::to<std::vector<uint8_t>>();
+
         cs_insn* insn;
         size_t count = cs_disasm(_capstone_handle, bytes_vec.data(),
                                  bytes_vec.size() - 1, 0x1000, 0, &insn);
