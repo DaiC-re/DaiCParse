@@ -29,7 +29,7 @@ class Binary {
 
         cs_insn* insn;
         size_t count = cs_disasm(_capstone_handle, bytes_vec.data(),
-                                 bytes_vec.size() - 1, 0x1000, 0, &insn);
+                                 bytes_vec.size() - 1, base_addr, 0, &insn);
         if (count > 0) {
             size_t j;
             for (j = 0; j < count; j++) {
