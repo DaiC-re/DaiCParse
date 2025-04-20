@@ -20,6 +20,21 @@ class Binary {
     Binary(const std::string path);
     ~Binary();
 
+    class Function {
+       public:
+        Function(std::string name, uintptr_t start, uintptr_t end)
+            : _name(name), _start(start), _end(end) {}
+
+        std::string getName() const { return _name; }
+        uintptr_t getStart() const { return _start; }
+        uintptr_t getEnd() const { return _end; }
+
+       private:
+        std::string _name;
+        uintptr_t _start;
+        uintptr_t _end;
+    };
+
     template <typename Range>
     requires std::ranges::range<Range> std::string contentToDisasm(
         const uintptr_t base_addr, const Range& view) {
@@ -44,9 +59,13 @@ class Binary {
         return disasm_stream.str();
     }
 
+   private:
+    void detectFunctions();
+
    public:
     std::unique_ptr<BinaryMetadata> metadata;
     std::vector<BinSection> sections;
+    std::vector<Function> _functions;
 
    private:
     std::unique_ptr<LIEF::Binary> _lief_binary;
