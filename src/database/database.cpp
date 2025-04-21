@@ -7,20 +7,16 @@ void FileHeader::serialize(std::ostream &out) const
 {
     out.write(reinterpret_cast<const char*>(&instructionSize), sizeof(instructionSize));
     out.write(reinterpret_cast<const char*>(&instructionOffset), sizeof(instructionOffset));
-    out.write(reinterpret_cast<const char*>(&symbolSize), sizeof(symbolSize));
-    out.write(reinterpret_cast<const char*>(&symbolOffset), sizeof(symbolOffset));
-    out.write(reinterpret_cast<const char*>(&xrefSize), sizeof(xrefSize));
-    out.write(reinterpret_cast<const char*>(&xrefOffset), sizeof(xrefOffset));
+    out.write(reinterpret_cast<const char*>(&functionsSize), sizeof(functionsSize));
+    out.write(reinterpret_cast<const char*>(&functionsOffset), sizeof(functionsOffset));
 }
 
 void FileHeader::deserialize(std::istream &in)
 {
     in.read(reinterpret_cast<char*>(&instructionSize), sizeof(instructionSize));
     in.read(reinterpret_cast<char*>(&instructionOffset), sizeof(instructionOffset));
-    in.read(reinterpret_cast<char*>(&symbolSize), sizeof(symbolSize));
-    in.read(reinterpret_cast<char*>(&symbolOffset), sizeof(symbolOffset));
-    in.read(reinterpret_cast<char*>(&xrefSize), sizeof(xrefSize));
-    in.read(reinterpret_cast<char*>(&xrefOffset), sizeof(xrefOffset));
+    in.read(reinterpret_cast<char*>(&functionsSize), sizeof(functionsSize));
+    in.read(reinterpret_cast<char*>(&functionsOffset), sizeof(functionsOffset));
 }
 
 template <typename Data>
@@ -28,11 +24,11 @@ void Database::serializeData(Data &datas, std::ostream &out, uint64_t &offset, u
 {
     offset = out.tellp();
     size = 0;
-    for (const auto &data: datas) {
         std::streampos start = out.tellp();
+    for (const auto &data: datas) {
         data.serialize(out);
-        size += out.tellp() - start;
     }
+    size += out.tellp() - start;
 }
 
 void Database::createProject(const std::string &path) {
@@ -60,10 +56,9 @@ void Database::serialize() const
     out.seekp(sizeof(FileHeader), std::ios::cur);
 
     _binary->metadata->serialize(out);
+
     serializeData(_binary->sections, out, fHeader.instructionOffset, fHeader.instructionSize);
-    //serializeData(_instructions, out, fHeader.instructionOffset, fHeader.instructionSize);
-    serializeData(_symbols, out, fHeader.symbolOffset, fHeader.symbolSize);
-    serializeData(_xrefs, out, fHeader.xrefOffset, fHeader.xrefSize);
+    serializeData(_binary->_functions, out, fHeader.functionsOffset, fHeader.functionsSize);
 
     out.seekp(headerPos);
     fHeader.serialize(out);
@@ -98,10 +93,7 @@ Database Database::deserialize(const std::string &filepath, std::unique_ptr<Bina
 
     Database db(binary, filepath);
     deserializeData(db._binary->sections, in, fHeader.instructionOffset, fHeader.instructionSize);
-    deserializeData(db._symbols, in, fHeader.symbolOffset, fHeader.symbolSize);
-    deserializeData(db._xrefs, in, fHeader.xrefOffset, fHeader.xrefSize);
-    in.close();
-
+    deserializeData(db._binary->_functions, in, fHeader.functionsOffset, fHeader.functionsSize);
     return db;
 }
 

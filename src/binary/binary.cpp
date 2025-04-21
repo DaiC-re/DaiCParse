@@ -25,6 +25,8 @@ Binary::Binary(const std::string path) {
 
 Binary::Binary(std::istream& in) : _capstone_handle(0) {
     metadata = std::make_unique<BinaryMetadata>(_lief_binary, in);
+    if (cs_open(CS_ARCH_X86, CS_MODE_64, &_capstone_handle) != CS_ERR_OK)
+        throw std::runtime_error("Failed to open handle with capstone");
 }
 
 Binary::~Binary() {
@@ -98,4 +100,23 @@ void Binary::detectFunctions() {
         }
         cs_free(insn, count);
     }
+}
+
+void Binary::Function::serialize(std::ostream& out) const {
+    uint32_t nameSize = _name.size();
+    out.write(reinterpret_cast<const char*>(&nameSize), sizeof(nameSize));
+    out.write(_name.data(), nameSize);
+
+    out.write(reinterpret_cast<const char*>(&_start), sizeof(uintptr_t));
+    out.write(reinterpret_cast<const char*>(&_end), sizeof(uintptr_t));
+}
+
+void Binary::Function::deserialize(std::istream& in) {
+    uint32_t nameSize = 0;
+    in.read(reinterpret_cast<char*>(&nameSize), sizeof(nameSize));
+    _name.resize(nameSize);
+    in.read(_name.data(), nameSize);
+
+    in.read(reinterpret_cast<char*>(&_start), sizeof(uintptr_t));
+    in.read(reinterpret_cast<char*>(&_end), sizeof(uintptr_t));
 }

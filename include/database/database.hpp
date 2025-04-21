@@ -11,10 +11,8 @@ struct FileHeader {
     // Binary
     uint64_t instructionOffset;
     uint64_t instructionSize;
-    uint64_t symbolOffset;
-    uint64_t symbolSize;
-    uint64_t xrefOffset;
-    uint64_t xrefSize;
+    uint64_t functionsOffset;
+    uint64_t functionsSize;
 
     void serialize(std::ostream &out) const;
     void deserialize(std::istream &in);

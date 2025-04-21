@@ -22,6 +22,7 @@ class Binary {
 
     class Function {
        public:
+        Function() {};
         Function(std::string name, uintptr_t start, uintptr_t end)
             : _name(name), _start(start), _end(end) {}
 
@@ -29,6 +30,8 @@ class Binary {
         uintptr_t getStart() const { return _start; }
         uintptr_t getEnd() const { return _end; }
 
+        void serialize(std::ostream &out) const;
+        void deserialize(std::istream &in);
        private:
         std::string _name;
         uintptr_t _start;
