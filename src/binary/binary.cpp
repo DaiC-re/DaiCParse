@@ -31,6 +31,13 @@ Binary::~Binary() {
     if (_capstone_handle != 0) cs_close(&_capstone_handle);
 }
 
+size_t Binary::get_instruction_count() const {
+    if (_instruction_count == 0) {
+        throw std::runtime_error("Instruction count was not set");
+    }
+    return _instruction_count;
+}
+
 void Binary::detectFunctions() {
     auto text_section_it =
         std::find_if(sections.begin(), sections.end(),
@@ -97,5 +104,6 @@ void Binary::detectFunctions() {
                       << fn.getName() << std::endl;
         }
         cs_free(insn, count);
+        _instruction_count = count;
     }
 }

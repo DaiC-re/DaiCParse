@@ -15,10 +15,12 @@
 
 class Binary {
    public:
-    Binary() : _capstone_handle(0){};
+    Binary() : _capstone_handle(0) {};
     Binary(std::istream& in);
     Binary(const std::string path);
     ~Binary();
+
+    size_t get_instruction_count() const;
 
     class Function {
        public:
