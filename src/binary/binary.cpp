@@ -31,7 +31,19 @@ Binary::~Binary() {
     if (_capstone_handle != 0) cs_close(&_capstone_handle);
 }
 
-size_t Binary::get_instruction_count() const {
+inline void Binary::addCheckPoint(uintptr_t offset) {
+    _disass_checkpoints.push_back(offset);
+}
+
+// Search for the closest checkpoint from the given address
+// It returns the index (count of instruction) and real adress in the binary
+std::pair<size_t, uintptr_t> Binary::closestCheckpointFromAddr(
+    uintptr_t instruction_ind) const {
+    int index = instruction_ind / _instructions_per_checkpoint;
+    auto closest_addr = _disass_checkpoints[index];
+    return {index, closest_addr};
+};
+
 size_t Binary::getInstructionCount() const {
     if (_instruction_count == 0) {
         throw std::runtime_error("Instruction count was not set");
@@ -39,6 +51,10 @@ size_t Binary::getInstructionCount() const {
     return _instruction_count;
 }
 
+uintptr_t Binary::getTextSectionOffset() const { return _text_section_offset; }
+
+// Detect functions in the binary and also add checkpoints to load chunks of
+// binary efficiently, will probably create an "analyzeBinary" function instead
 void Binary::detectFunctions() {
     auto text_section_it =
         std::find_if(sections.begin(), sections.end(),
@@ -52,19 +68,20 @@ void Binary::detectFunctions() {
     std::vector<uint8_t> bytes_vec =
         text_section | std::ranges::to<std::vector<uint8_t>>();
     cs_insn* insn;
-    size_t count = cs_disasm(_capstone_handle, bytes_vec.data(),
-                             bytes_vec.size() - 1, 0x401000, 0, &insn);
-    // std::cout << "counnnnt: " << bytes_vec.size() << " "
-    //           << " " << count << std::endl;
+    size_t count =
+        cs_disasm(_capstone_handle, bytes_vec.data(), bytes_vec.size() - 1,
+                  text_section.offset, 0, &insn);
+    _text_section_offset = text_section.offset;
     if (count > 0) {
         size_t j;
         uintptr_t current_function_start = 0;
         for (j = 0; j < count; j++) {
             auto& ins = insn[j];
-            // std::cout << std::hex << "addr " << ins.address << " byte "
-            //           << static_cast<int>(ins.bytes[0]) << "\"" <<
-            //           ins.mnemonic
-            //           << "\"" << std::endl;
+
+            if (j % _instructions_per_checkpoint == 0) {
+                std::cout << "Added breakpoint <3\n";
+                addCheckPoint(ins.address - text_section.offset);
+            }
             // Detect function prologue for x86_64: push rbp; mov rbp, rsp
             if (ins.bytes[0] == 0x55 && std::string_view(ins.op_str) == "rbp") {
                 std::cout

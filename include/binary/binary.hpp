@@ -21,6 +21,9 @@ class Binary {
     ~Binary();
 
     size_t getInstructionCount() const;
+    uintptr_t getTextSectionOffset() const;
+    std::pair<size_t, uintptr_t> closestCheckpointFromAddr(
+        uintptr_t addr) const;
 
     class Function {
        public:
@@ -63,15 +66,20 @@ class Binary {
 
    private:
     void detectFunctions();
+    inline void addCheckPoint(uintptr_t offset);
 
    public:
     std::unique_ptr<BinaryMetadata> metadata;
     std::vector<BinSection> sections;
     std::vector<Function> _functions;
+    std::vector<uintptr_t> _disass_checkpoints;
 
    private:
     std::unique_ptr<LIEF::Binary> _lief_binary;
     csh _capstone_handle;
+    size_t _instruction_count = 0;
+    uintptr_t _text_section_offset = 0;
+    const size_t _instructions_per_checkpoint = 100;
 };
 
 template <typename Range>
