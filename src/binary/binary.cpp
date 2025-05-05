@@ -32,6 +32,7 @@ Binary::~Binary() {
 }
 
 size_t Binary::get_instruction_count() const {
+size_t Binary::getInstructionCount() const {
     if (_instruction_count == 0) {
         throw std::runtime_error("Instruction count was not set");
     }

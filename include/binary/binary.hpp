@@ -20,7 +20,7 @@ class Binary {
     Binary(const std::string path);
     ~Binary();
 
-    size_t get_instruction_count() const;
+    size_t getInstructionCount() const;
 
     class Function {
        public:
