@@ -29,6 +29,7 @@ class Binary {
         std::string getName() const { return _name; }
         uintptr_t getStart() const { return _start; }
         uintptr_t getEnd() const { return _end; }
+        void setName(const std::string& name) { _name = name; }
 
         void serialize(std::ostream &out) const;
         void deserialize(std::istream &in);
