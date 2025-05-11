@@ -41,8 +41,8 @@ std::pair<size_t, uintptr_t> Binary::closestCheckpointFromAddr(
     size_t instruction_ind) const {
     int index = instruction_ind / _instructions_per_checkpoint;
     auto closest_addr = _disass_checkpoints[index];
-    return {index, closest_addr};
-};
+    return {index * _instructions_per_checkpoint, closest_addr};
+}
 
 std::pair<size_t, uintptr_t> Binary::nextCheckpointFromCheckpoint(
     size_t checkpoint_ins_index) const {
