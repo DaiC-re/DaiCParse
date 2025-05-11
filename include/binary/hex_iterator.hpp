@@ -13,12 +13,16 @@ struct BinSection {
     std::string name;
     uintptr_t offset;
     LIEF::span<const uint8_t> content;
+    uintptr_t virtual_addr;
     void serialize(std::ostream& out) const;
     void deserialize(std::istream& in);
     class SectionIterator;
     BinSection(std::string name, LIEF::span<const uint8_t> content,
-               uintptr_t offset)
-        : name(name), content(content), offset(offset) {}
+               uintptr_t offset, uintptr_t virtual_addr)
+        : name(name),
+          content(content),
+          offset(offset),
+          virtual_addr(virtual_addr) {}
     BinSection() = default;
     ~BinSection();
 

@@ -14,8 +14,9 @@ Binary::Binary(const std::string path) {
         exit(1);
     }
     for (auto& section : _lief_binary->sections()) {
-        this->sections.push_back(
-            BinSection(section.name(), section.content(), section.offset()));
+        this->sections.push_back(BinSection(section.name(), section.content(),
+                                            section.offset(),
+                                            section.virtual_address()));
     }
     metadata = std::make_unique<BinaryMetadata>(_lief_binary, path);
     if (cs_open(CS_ARCH_X86, CS_MODE_64, &_capstone_handle) != CS_ERR_OK)
