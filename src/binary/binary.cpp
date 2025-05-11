@@ -38,11 +38,19 @@ inline void Binary::addCheckPoint(uintptr_t offset) {
 // Search for the closest checkpoint from the given address
 // It returns the index (count of instruction) and real adress in the binary
 std::pair<size_t, uintptr_t> Binary::closestCheckpointFromAddr(
-    uintptr_t instruction_ind) const {
+    size_t instruction_ind) const {
     int index = instruction_ind / _instructions_per_checkpoint;
     auto closest_addr = _disass_checkpoints[index];
     return {index, closest_addr};
 };
+
+std::pair<size_t, uintptr_t> Binary::nextCheckpointFromCheckpoint(
+    size_t checkpoint_ins_index) const {
+    auto checkpoint_index = checkpoint_ins_index / _instructions_per_checkpoint;
+    auto next_checkpoint_addr = _disass_checkpoints[checkpoint_index + 1];
+    return {checkpoint_ins_index + _instructions_per_checkpoint,
+            next_checkpoint_addr};
+}
 
 size_t Binary::getInstructionCount() const {
     if (_instruction_count == 0) {
