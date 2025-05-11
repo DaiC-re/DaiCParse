@@ -60,9 +60,11 @@ size_t Binary::getInstructionCount() const {
     return _instruction_count;
 }
 
-uintptr_t Binary::getTextSectionOffset() const { return _text_section_offset; }
+uintptr_t Binary::getTextSectionVirtualAddr() const {
+    return _text_section_relative_addr;
+}
 
-// Detect functions in the binary and also add checkpoints to load chunks of
+uintptr_t Binary::getImageBase() const { return _lief_binary->imagebase(); }
 // binary efficiently, will probably create an "analyzeBinary" function instead
 void Binary::detectFunctions() {
     auto text_section_it =

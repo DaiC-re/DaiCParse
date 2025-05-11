@@ -22,6 +22,7 @@ class Binary {
 
     size_t getInstructionCount() const;
     uintptr_t getTextSectionOffset() const;
+    uintptr_t getImageBase() const;
     std::pair<size_t, uintptr_t> closestCheckpointFromAddr(
         size_t instruction_ind) const;
     std::pair<size_t, uintptr_t> nextCheckpointFromCheckpoint(
