@@ -66,6 +66,41 @@ class Binary {
         return disasm_stream.str();
     }
 
+    template <typename Range>
+    requires std::ranges::range<Range> uintptr_t getTargetFromCheckpoint(
+        std::pair<size_t, uintptr_t> checkpoint, size_t target_index,
+        const Range& view_from_checkpoint) {
+        size_t current_index = checkpoint.first;
+        uintptr_t current_address = checkpoint.second;
+        auto [next_checkpoint_index, next_checkpoint_addr] =
+            nextCheckpointFromCheckpoint(current_index);
+        auto selected_chunk_size = next_checkpoint_addr - current_address;
+
+        std::vector<uint8_t> bytes_vec =
+            view_from_checkpoint | std::views::take(selected_chunk_size) |
+            std::ranges::to<std::vector<uint8_t>>();
+
+        cs_insn* insn = cs_malloc(_capstone_handle);
+        size_t code_size = bytes_vec.size();
+        const uint8_t* code_ptr = bytes_vec.data();
+
+        while (cs_disasm_iter(_capstone_handle, &code_ptr, &code_size,
+                              &current_address, insn)) {
+            if (current_index == target_index) {
+                uintptr_t target_address = insn->address;
+                cs_free(insn, 1);
+                return target_address;
+            }
+            ++current_index;
+        }
+
+        if (insn) {
+            cs_free(insn, 1);
+        }
+        throw std::runtime_error(
+            "Target instruction index not found in the given range.");
+    }
+
    private:
     void detectFunctions();
     inline void addCheckPoint(uintptr_t offset);
