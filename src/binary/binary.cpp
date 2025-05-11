@@ -65,8 +65,8 @@ uintptr_t Binary::getTextSectionVirtualAddr() const {
 }
 
 uintptr_t Binary::getImageBase() const { return _lief_binary->imagebase(); }
-// binary efficiently, will probably create an "analyzeBinary" function instead
-void Binary::detectFunctions() {
+
+BinSection& Binary::getTextSection() {
     auto text_section_it =
         std::find_if(sections.begin(), sections.end(),
                      [](const BinSection& el) { return el.name == ".text"; });
@@ -74,15 +74,33 @@ void Binary::detectFunctions() {
         throw std::runtime_error(
             "Couldn't find the .text section in the binary");
     }
-    auto text_section = *text_section_it;
+    auto& text_section = *text_section_it;
+    return text_section;
+}
 
+const BinSection& Binary::getTextSection() const {
+    auto text_section_it =
+        std::find_if(sections.begin(), sections.end(),
+                     [](const BinSection& el) { return el.name == ".text"; });
+    if (text_section_it == sections.end()) {
+        throw std::runtime_error(
+            "Couldn't find the .text section in the binary");
+    }
+    const auto& text_section = *text_section_it;
+    return text_section;
+}
+
+// Detect functions in the binary and also add checkpoints to load chunks of
+// binary efficiently, will probably create an "analyzeBinary" function instead
+void Binary::detectFunctions() {
+    auto& text_section = getTextSection();
+    _text_section_relative_addr = text_section.virtual_addr;
     std::vector<uint8_t> bytes_vec =
         text_section | std::ranges::to<std::vector<uint8_t>>();
     cs_insn* insn;
     size_t count =
         cs_disasm(_capstone_handle, bytes_vec.data(), bytes_vec.size() - 1,
-                  text_section.offset, 0, &insn);
-    _text_section_offset = text_section.offset;
+                  getImageBase() + _text_section_relative_addr, 0, &insn);
     if (count > 0) {
         size_t j;
         uintptr_t current_function_start = 0;
@@ -91,7 +109,8 @@ void Binary::detectFunctions() {
 
             if (j % _instructions_per_checkpoint == 0) {
                 std::cout << "Added breakpoint <3\n";
-                addCheckPoint(ins.address - text_section.offset);
+                addCheckPoint(ins.address - getImageBase() -
+                              _text_section_relative_addr);
             }
             // Detect function prologue for x86_64: push rbp; mov rbp, rsp
             if (ins.bytes[0] == 0x55 && std::string_view(ins.op_str) == "rbp") {

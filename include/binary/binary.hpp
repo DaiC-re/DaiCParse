@@ -21,8 +21,10 @@ class Binary {
     ~Binary();
 
     size_t getInstructionCount() const;
-    uintptr_t getTextSectionOffset() const;
+    uintptr_t getTextSectionVirtualAddr() const;
     uintptr_t getImageBase() const;
+    BinSection& getTextSection();
+    const BinSection& getTextSection() const;
     std::pair<size_t, uintptr_t> closestCheckpointFromAddr(
         size_t instruction_ind) const;
     std::pair<size_t, uintptr_t> nextCheckpointFromCheckpoint(
@@ -116,7 +118,7 @@ class Binary {
     std::unique_ptr<LIEF::Binary> _lief_binary;
     csh _capstone_handle;
     size_t _instruction_count = 0;
-    uintptr_t _text_section_offset = 0;
+    uintptr_t _text_section_relative_addr = 0;
     const size_t _instructions_per_checkpoint = 100;
 };
 
