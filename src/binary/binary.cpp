@@ -26,6 +26,8 @@ Binary::Binary(const std::string path) {
 
 Binary::Binary(std::istream& in) : _capstone_handle(0) {
     metadata = std::make_unique<BinaryMetadata>(_lief_binary, in);
+    if (cs_open(CS_ARCH_X86, CS_MODE_64, &_capstone_handle) != CS_ERR_OK)
+        throw std::runtime_error("Failed to open handle with capstone");
 }
 
 Binary::~Binary() {
@@ -78,6 +80,7 @@ BinSection& Binary::getTextSection() {
     return text_section;
 }
 
+
 const BinSection& Binary::getTextSection() const {
     auto text_section_it =
         std::find_if(sections.begin(), sections.end(),
@@ -88,6 +91,26 @@ const BinSection& Binary::getTextSection() const {
     }
     const auto& text_section = *text_section_it;
     return text_section;
+}
+
+void Binary::detectCalledFunctions(std::vector<uintptr_t> &called_functions, cs_insn *insn, size_t count)
+{
+    size_t j;
+    for (j = 0; j < count; j++) {
+        auto& ins = insn[j];
+        if (std::string_view(ins.mnemonic) == "call") {
+            std::cout << "Found call instruction to: " << std::hex
+                    << ins.op_str << "\n";
+            // get ins.op_str in bytes
+
+            try {
+                called_functions.push_back(std::stoi(ins.op_str, nullptr, 16));
+            } catch (const std::invalid_argument& e) {
+            }
+
+            //called_functions.push_back(std::hex(ins.op_str));
+        }
+    }
 }
 
 // Detect functions in the binary and also add checkpoints to load chunks of
@@ -101,9 +124,12 @@ void Binary::detectFunctions() {
     size_t count =
         cs_disasm(_capstone_handle, bytes_vec.data(), bytes_vec.size() - 1,
                   getImageBase() + _text_section_relative_addr, 0, &insn);
+    std::vector<uintptr_t> called_functions;
     if (count > 0) {
+        detectCalledFunctions(called_functions, insn, count);
         size_t j;
         uintptr_t current_function_start = 0;
+        uintptr_t ret_instructions = 0;
         for (j = 0; j < count; j++) {
             auto& ins = insn[j];
 
@@ -113,38 +139,46 @@ void Binary::detectFunctions() {
                               _text_section_relative_addr);
             }
             // Detect function prologue for x86_64: push rbp; mov rbp, rsp
-            if (ins.bytes[0] == 0x55 && std::string_view(ins.op_str) == "rbp") {
-                std::cout
-                    << std::hex << ins.address
-                    << " Found function prologue (push rbp; mov rbp, rsp)\n";
-                current_function_start = ins.address;
-            }
+            // if (ins.bytes[0] == 0x55 && std::string_view(ins.op_str) == "rbp") {
+                // if (current_function_start != 0 && ret_instructions != 0) {
+                    // add_function(current_function_start, ret_instructions);
+                    // ret_instructions = 0;
+                // }
+                // std::cout
+                    // << std::hex << ins.address
+                    // << " Found function prologue (push rbp; mov rbp, rsp)\n";
+                // current_function_start = ins.address;
+            // }
 
             // Detect function prologue for x86: push ebp; mov ebp, esp
-            if (ins.bytes[0] == 0x55 && std::string_view(ins.op_str) == "ebp") {
-                for (auto byte : ins.bytes) {
-                    std::cout << std::hex << static_cast<int>(byte) << " ";
+            // if (ins.bytes[0] == 0x55 && std::string_view(ins.op_str) == "ebp") {
+                // if (current_function_start != 0 && ret_instructions != 0) {
+                    // add_function(current_function_start, ret_instructions);
+                    // ret_instructions = 0;
+                // }
+                // for (auto byte : ins.bytes) {
+                    // std::cout << std::hex << static_cast<int>(byte) << " ";
+                // }
+                // std::cout << ins.mnemonic << " size: " << ins.op_str << "\n";
+                // std::cout
+                    // << "Found x86 function prologue (push ebp; mov ebp, esp)\n";
+                // current_function_start = ins.address;
+            // }
+            // Store the last ret instruction until the next function start and return the last ret instruction to get the function end
+
+            // Function qui chercherait à détecter tout les calls et qui sauvegarde l'adresse de destination dans un vecteur,
+            // une fois qu'on a ce vecteur on peut commencer detectFunctions classique, si on est à une adresse qui est dans
+            // le vecteur, on met current_function_start à cette adresse
+            if(std::find(called_functions.begin(), called_functions.end(), ins.address) != called_functions.end()) {
+                if (current_function_start != 0 && ret_instructions != 0) {
+                    add_function(current_function_start, ret_instructions);
+                    ret_instructions = 0;
                 }
-                std::cout << ins.mnemonic << " size: " << ins.op_str << "\n";
-                std::cout
-                    << "Found x86 function prologue (push ebp; mov ebp, esp)\n";
                 current_function_start = ins.address;
             }
-
-            if (std::string_view(ins.mnemonic) == "call") {
-                std::cout << "Found call instruction to: " << std::hex
-                          << ins.op_str << "\n";
-            }
-
             if (std::string_view(ins.mnemonic) == "ret") {
                 std::cout << "Found ret\n";
-                auto function_end = ins.address + ins.size;
-                auto function_name =
-                    std::string("function_") +
-                    std::format("{:x}", current_function_start);
-                _functions.push_back(Function(
-                    function_name, current_function_start, function_end));
-                current_function_start = 0;
+                ret_instructions = ins.address + ins.size;
             }
         }
         for (auto& fn : _functions) {
@@ -154,4 +188,29 @@ void Binary::detectFunctions() {
         cs_free(insn, count);
         _instruction_count = count;
     }
+}
+
+void Binary::add_function(uintptr_t start, uintptr_t end) {
+    auto function_name = std::string("function_") +
+                         std::format("{:x}", start);
+    _functions.push_back(Function(function_name, start, end));
+}
+
+void Binary::Function::serialize(std::ostream& out) const {
+    uint32_t nameSize = _name.size();
+    out.write(reinterpret_cast<const char*>(&nameSize), sizeof(nameSize));
+    out.write(_name.data(), nameSize);
+
+    out.write(reinterpret_cast<const char*>(&_start), sizeof(uintptr_t));
+    out.write(reinterpret_cast<const char*>(&_end), sizeof(uintptr_t));
+}
+
+void Binary::Function::deserialize(std::istream& in) {
+    uint32_t nameSize = 0;
+    in.read(reinterpret_cast<char*>(&nameSize), sizeof(nameSize));
+    _name.resize(nameSize);
+    in.read(_name.data(), nameSize);
+
+    in.read(reinterpret_cast<char*>(&_start), sizeof(uintptr_t));
+    in.read(reinterpret_cast<char*>(&_end), sizeof(uintptr_t));
 }

@@ -32,13 +32,17 @@ class Binary {
 
     class Function {
        public:
+        Function() {};
         Function(std::string name, uintptr_t start, uintptr_t end)
             : _name(name), _start(start), _end(end) {}
 
         std::string getName() const { return _name; }
         uintptr_t getStart() const { return _start; }
         uintptr_t getEnd() const { return _end; }
+        void setName(const std::string& name) { _name = name; }
 
+        void serialize(std::ostream &out) const;
+        void deserialize(std::istream &in);
        private:
         std::string _name;
         uintptr_t _start;
@@ -107,7 +111,9 @@ class Binary {
    private:
     void detectFunctions();
     inline void addCheckPoint(uintptr_t offset);
-
+    void add_function(uintptr_t start, uintptr_t end);
+    void detectCalledFunctions(std::vector<uintptr_t> &called_functions, cs_insn *insn, size_t count);
+  
    public:
     std::unique_ptr<BinaryMetadata> metadata;
     std::vector<BinSection> sections;
