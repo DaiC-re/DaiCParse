@@ -66,7 +66,18 @@ uintptr_t Binary::getTextSectionVirtualAddr() const {
     return _text_section_relative_addr;
 }
 
-uintptr_t Binary::getImageBase() const { return _lief_binary->imagebase(); }
+uintptr_t Binary::getImageBase() const {
+    auto general = metadata->get_general();
+    auto finded = std::find_if(general.begin(), general.end(),
+                     [](auto& element) { return element.first == "Image base"; });
+    if (finded != general.end()) {
+        auto& val = *finded;
+        return std::stoi(val.second); 
+    } else {
+        throw std::runtime_error(
+            "Couldn't find the image base in the metadatas");
+    }
+}
 
 BinSection& Binary::getTextSection() {
     auto text_section_it =
