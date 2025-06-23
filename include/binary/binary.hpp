@@ -30,6 +30,8 @@ class Binary {
     std::pair<size_t, uintptr_t> nextCheckpointFromCheckpoint(
         size_t instruction_ind) const;
 
+    void setInstructionCount(size_t count) {_instruction_count = count;}
+
     class Function {
        public:
         Function() {};

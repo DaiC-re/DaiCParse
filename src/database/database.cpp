@@ -9,6 +9,9 @@ void FileHeader::serialize(std::ostream &out) const
     out.write(reinterpret_cast<const char*>(&instructionOffset), sizeof(instructionOffset));
     out.write(reinterpret_cast<const char*>(&functionsSize), sizeof(functionsSize));
     out.write(reinterpret_cast<const char*>(&functionsOffset), sizeof(functionsOffset));
+    out.write(reinterpret_cast<const char*>(&checkpointOffset), sizeof(checkpointOffset));
+    out.write(reinterpret_cast<const char*>(&checkpointSize), sizeof(checkpointSize));
+    out.write(reinterpret_cast<const char*>(&instructionCount), sizeof(instructionCount));
 }
 
 void FileHeader::deserialize(std::istream &in)
@@ -17,6 +20,9 @@ void FileHeader::deserialize(std::istream &in)
     in.read(reinterpret_cast<char*>(&instructionOffset), sizeof(instructionOffset));
     in.read(reinterpret_cast<char*>(&functionsSize), sizeof(functionsSize));
     in.read(reinterpret_cast<char*>(&functionsOffset), sizeof(functionsOffset));
+    in.read(reinterpret_cast<char*>(&checkpointOffset), sizeof(checkpointOffset));
+    in.read(reinterpret_cast<char*>(&checkpointSize), sizeof(checkpointSize));
+    in.read(reinterpret_cast<char*>(&instructionCount), sizeof(instructionCount));
 }
 
 template <typename Data>
@@ -29,6 +35,28 @@ void Database::serializeData(Data &datas, std::ostream &out, uint64_t &offset, u
         data.serialize(out);
     }
     size += out.tellp() - start;
+}
+
+void Database::serializeUint(std::vector<uintptr_t> &datas, std::ostream &out, uint64_t &offset, uint64_t &size) const
+{
+    offset = out.tellp();
+    size = 0;
+    std::streampos start = out.tellp();
+    for (const auto &data: datas) {
+        out.write(reinterpret_cast<const char*>(&data), sizeof(uintptr_t));
+    }
+    size += out.tellp() - start;
+}
+
+void Database::deserializeUint(std::vector<uintptr_t> &datas, std::istream &in, uint64_t &offset, uint64_t &size)
+{
+    in.seekg(offset);
+    std::streampos endData = offset + size;
+    while (in.tellg() < endData) {
+        uintptr_t data;
+        in.read(reinterpret_cast<char*>(&data), sizeof(uintptr_t));
+        datas.push_back(data);
+    }
 }
 
 void Database::createProject(const std::string &path) {
@@ -59,6 +87,9 @@ void Database::serialize() const
 
     serializeData(_binary->sections, out, fHeader.instructionOffset, fHeader.instructionSize);
     serializeData(_binary->_functions, out, fHeader.functionsOffset, fHeader.functionsSize);
+    serializeUint(_binary->_disass_checkpoints, out, fHeader.checkpointOffset, fHeader.checkpointSize);
+
+    fHeader.instructionCount = _binary->getInstructionCount();
 
     out.seekp(headerPos);
     fHeader.serialize(out);
@@ -94,6 +125,10 @@ Database Database::deserialize(const std::string &filepath, std::unique_ptr<Bina
     Database db(binary, filepath);
     deserializeData(db._binary->sections, in, fHeader.instructionOffset, fHeader.instructionSize);
     deserializeData(db._binary->_functions, in, fHeader.functionsOffset, fHeader.functionsSize);
+    deserializeUint(db._binary->_disass_checkpoints, in, fHeader.checkpointOffset, fHeader.checkpointSize);
+
+    db._binary->setInstructionCount(fHeader.instructionCount);
+
     return db;
 }
 
