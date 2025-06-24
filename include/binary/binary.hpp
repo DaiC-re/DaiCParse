@@ -45,6 +45,10 @@ class Binary {
 
         void serialize(std::ostream &out) const;
         void deserialize(std::istream &in);
+
+        bool operator==(const Function &other) const {
+            return _name == other._name && _start == other._start &&
+                   _end == other._end;};
        private:
         std::string _name;
         uintptr_t _start;
