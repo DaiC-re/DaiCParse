@@ -99,7 +99,7 @@ void BinSection::deserialize(std::istream& in) {
     // mmap, here the whole section is loaded in memory
     _buffer_ptr = new uint8_t[contentSize];
     in.read(reinterpret_cast<char*>(_buffer_ptr), contentSize);
-    content = LIEF::span(_buffer_ptr, contentSize);
+    content = LIEF::span<const uint8_t>(_buffer_ptr, contentSize);
 }
 
 BinSection::~BinSection() {
