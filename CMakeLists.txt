@@ -20,7 +20,8 @@ if(BUILD_SHARED_LIBS)
 else()
   add_library(${TARGET_NAME} STATIC ${TARGET_SOURCES}
       include/checksums/file_checksum.h include/checksums/md5.h include/checksums/md5_loc.h include/database/BinaryFormat.hpp include/database/database.hpp include/metadata/metadata.hpp
-      include/database/Symbol.hpp include/binary/binary.hpp include/version/VersionControl.hpp)
+      include/database/Symbol.hpp include/binary/binary.hpp include/version/VersionControl.hpp
+      include/binary/binary_hash.hpp)
 endif()
 
 #####################################
