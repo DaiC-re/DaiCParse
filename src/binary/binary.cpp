@@ -196,6 +196,10 @@ void Binary::detectFunctions() {
             std::cout << fn.getStart() << " " << fn.getEnd() << " "
                       << fn.getName() << std::endl;
         }
+        addCheckPoint(insn[count - 1].address - getImageBase() -
+					  _text_section_relative_addr);
+        _instruction_count = count;
+        std::cout << "instruction count: " << std::dec << _instruction_count << std::endl;
         cs_free(insn, count);
         _instruction_count = count;
     }
