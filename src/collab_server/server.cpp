@@ -39,11 +39,13 @@ CollabServer::statusRes CollabServer::connect_to_peer(const std::string& ip, int
     return { true, "Successfully connected to" + ip + ":" + std::to_string(port) };
 }
 
-void CollabServer::send_file_to_peers(std::string file_path) {
+void CollabServer::send_file_to_peers(std::string file_path, std::string project_name) {
     std::ifstream text(file_path);
     std::stringstream buffer;
+    size_t pos = file_path.find_last_of("/\\");
+    std::string new_file_path= file_path.substr(0, pos + 1) + project_name + "_" + file_path.substr(pos + 1);
 
-    buffer << "DaicFile " << file_path << '\n' << text.rdbuf();
+    buffer << "DaicFile " << new_file_path << '\n' << text.rdbuf();
     std::string str = buffer.str();
 
     send_message_to_peers(str, _server_fd);
@@ -80,7 +82,7 @@ void CollabServer::handle_peer(int peer_fd) {
 
         if (message.starts_with("DaicFile")) {
             std::string first_line = message.substr(0, message.find("\n"));
-            std::string file_name = first_line.substr(first_line.find_last_of("/") + 1);
+            std::string file_name = first_line.substr(first_line.find_last_of("/\\") + 1);
             std::string file_content = message.substr(first_line.size() + 1);
 
             std::cout << "Received file: " << file_name << std::endl;

@@ -16,7 +16,7 @@ class CollabServer
         ~CollabServer();
         statusRes startServerThread(int port);
         statusRes connect_to_peer(const std::string& ip, int port);
-        void send_file_to_peers(std::string file_path);
+        void send_file_to_peers(std::string file_path, std::string project_name);
         bool get_is_online() {
             return _is_online;
         }
