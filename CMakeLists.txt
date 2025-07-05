@@ -17,14 +17,15 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${TARGET_SOURCES})
 #####################################
 # Define Target according to options
 #####################################
-if(BUILD_SHARED_LIBS)
-  add_library(${TARGET_NAME} SHARED ${TARGET_SOURCES})
-else()
+# if(BUILD_SHARED_LIBS)
+  # add_library(${TARGET_NAME} SHARED ${TARGET_SOURCES})
+# else()
   add_library(${TARGET_NAME} STATIC ${TARGET_SOURCES}
       include/checksums/file_checksum.h include/checksums/md5.h include/checksums/md5_loc.h include/database/BinaryFormat.hpp include/database/database.hpp include/metadata/metadata.hpp
       include/database/Symbol.hpp include/binary/binary.hpp)
-endif()
+# endif()
 
+set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 #####################################
 # Define Target Properties and Optional OpenSSL Dependency
 #####################################
