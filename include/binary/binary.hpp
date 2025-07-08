@@ -25,7 +25,7 @@ class Binary {
     uintptr_t getImageBase() const;
     BinSection& getTextSection();
     const BinSection& getTextSection() const;
-    std::pair<size_t, uintptr_t> closestCheckpointFromAddr(
+    std::pair<size_t, uintptr_t> closestCheckpointFromIndex(
         size_t instruction_ind) const;
     std::pair<size_t, uintptr_t> nextCheckpointFromCheckpoint(
         size_t instruction_ind) const;
@@ -109,6 +109,7 @@ class Binary {
         throw std::runtime_error(
             "Target instruction index not found in the given range.");
     }
+    size_t instructionIndexFromAddr(uintptr_t addr);
 
    private:
     void detectFunctions();

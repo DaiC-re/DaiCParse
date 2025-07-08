@@ -40,7 +40,7 @@ inline void Binary::addCheckPoint(uintptr_t offset) {
 
 // Search for the closest checkpoint from the given address
 // It returns the index (count of instruction) and real adress in the binary
-std::pair<size_t, uintptr_t> Binary::closestCheckpointFromAddr(
+std::pair<size_t, uintptr_t> Binary::closestCheckpointFromIndex(
     size_t instruction_ind) const {
     int index = instruction_ind / _instructions_per_checkpoint;
     auto closest_addr = _disass_checkpoints[index];
@@ -53,6 +53,57 @@ std::pair<size_t, uintptr_t> Binary::nextCheckpointFromCheckpoint(
     auto next_checkpoint_addr = _disass_checkpoints[checkpoint_index + 1];
     return {checkpoint_ins_index + _instructions_per_checkpoint,
             next_checkpoint_addr};
+}
+
+size_t Binary::instructionIndexFromAddr(uintptr_t addr) {
+    const size_t addr_in_section = addr - getTextSectionVirtualAddr();
+    auto checkpoint = std::lower_bound(_disass_checkpoints.begin(), _disass_checkpoints.end(),
+                         addr_in_section);
+    if (checkpoint != _disass_checkpoints.begin()) {
+    --checkpoint; // Move to the closest checkpoint before the address
+    } else {
+        throw std::runtime_error("No checkpoint found before the given address");
+    }
+    auto current_addr = *checkpoint;
+    std::cout << current_addr << " " << addr_in_section << "\n";
+    for (auto &cp : _disass_checkpoints) {
+        std::cout << cp << " ";
+    }
+    std::cout << addr << " " << getImageBase() << " " << getTextSectionVirtualAddr() << "\n";
+    auto checkpoint_index =
+        std::distance(_disass_checkpoints.begin(), checkpoint);
+
+    const auto [next_checkpoint_index, next_checkpoint_addr] =
+        nextCheckpointFromCheckpoint(checkpoint_index * _instructions_per_checkpoint);
+    const auto selected_chunk_size = next_checkpoint_addr - current_addr;
+
+    std::vector<uint8_t> bytes_vec = std::views::join(sections) |
+                                     std::views::drop(current_addr) |
+                                     std::views::take(selected_chunk_size) |
+                                     std::ranges::to<std::vector<uint8_t>>();
+
+    cs_insn* insn = cs_malloc(_capstone_handle);
+    size_t code_size = bytes_vec.size();
+    const uint8_t* code_ptr = bytes_vec.data();
+    auto current_index = checkpoint_index * _instructions_per_checkpoint;
+
+    while (cs_disasm_iter(_capstone_handle, &code_ptr, &code_size,
+                          &current_addr, insn)) {
+        if (current_addr == addr_in_section) {
+            uintptr_t target_address = insn->address;
+            cs_free(insn, 1);
+            return current_index;
+        }
+        std::cout << "Current address: " << std::hex
+                  << current_addr << " Target address: " << std::hex << addr_in_section << "\n";
+        ++current_index;
+    }
+
+    if (insn) {
+        cs_free(insn, 1);
+    }
+	throw std::runtime_error(
+		"Target instruction index not found in the given range.");
 }
 
 size_t Binary::getInstructionCount() const {
@@ -177,9 +228,9 @@ void Binary::detectFunctions() {
             // }
             // Store the last ret instruction until the next function start and return the last ret instruction to get the function end
 
-            // Function qui chercherait Ã  dÃ©tecter tout les calls et qui sauvegarde l'adresse de destination dans un vecteur,
-            // une fois qu'on a ce vecteur on peut commencer detectFunctions classique, si on est Ã  une adresse qui est dans
-            // le vecteur, on met current_function_start Ã  cette adresse
+            // Function qui chercherait à détecter tout les calls et qui sauvegarde l'adresse de destination dans un vecteur,
+            // une fois qu'on a ce vecteur on peut commencer detectFunctions classique, si on est à une adresse qui est dans
+            // le vecteur, on met current_function_start à cette adresse
             if(std::find(called_functions.begin(), called_functions.end(), ins.address) != called_functions.end()) {
                 if (current_function_start != 0 && ret_instructions != 0) {
                     add_function(current_function_start, ret_instructions);
@@ -196,6 +247,10 @@ void Binary::detectFunctions() {
             std::cout << fn.getStart() << " " << fn.getEnd() << " "
                       << fn.getName() << std::endl;
         }
+        addCheckPoint(insn[count - 1].address - getImageBase() -
+					  _text_section_relative_addr);
+        _instruction_count = count;
+        std::cout << "instruction count: " << std::dec << _instruction_count << std::endl;
         cs_free(insn, count);
         _instruction_count = count;
     }
