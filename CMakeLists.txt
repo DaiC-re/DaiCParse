@@ -20,10 +20,10 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${TARGET_SOURCES})
 # if(BUILD_SHARED_LIBS)
   # add_library(${TARGET_NAME} SHARED ${TARGET_SOURCES})
 # else()
-  add_library(${TARGET_NAME} STATIC ${TARGET_SOURCES}
-      include/checksums/file_checksum.h include/checksums/md5.h include/checksums/md5_loc.h include/database/BinaryFormat.hpp include/database/database.hpp include/metadata/metadata.hpp
-      include/database/Symbol.hpp include/binary/binary.hpp include/collab_server/server.hpp)
-endif()
+add_library(${TARGET_NAME} STATIC ${TARGET_SOURCES}
+    include/checksums/file_checksum.h include/checksums/md5.h include/checksums/md5_loc.h include/database/BinaryFormat.hpp include/database/database.hpp include/metadata/metadata.hpp
+    include/database/Symbol.hpp include/binary/binary.hpp include/collab_server/server.hpp)
+# endif()
 
 set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 #####################################
