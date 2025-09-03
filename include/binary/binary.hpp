@@ -118,6 +118,7 @@ class Binary {
     void detectCalledFunctions(std::vector<uintptr_t> &called_functions, cs_insn *insn, size_t count);
   
    public:
+    Function &get_function(std::string &name);
     std::unique_ptr<BinaryMetadata> metadata;
     std::vector<BinSection> sections;
     std::vector<Function> _functions;

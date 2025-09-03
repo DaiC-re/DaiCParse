@@ -256,6 +256,14 @@ void Binary::detectFunctions() {
     }
 }
 
+Function &Binary::get_function(std::string &name) {
+    for (auto& fn : _functions) {
+        if (fn.getName() == name) {
+            return fn;
+        }
+    }
+}
+
 void Binary::add_function(uintptr_t start, uintptr_t end) {
     auto function_name = std::string("function_") +
                          std::format("{:x}", start);
