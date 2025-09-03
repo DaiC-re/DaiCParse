@@ -55,6 +55,14 @@ std::pair<size_t, uintptr_t> Binary::nextCheckpointFromCheckpoint(
             next_checkpoint_addr};
 }
 
+std::string Binary::getFunctionInstructions(uintptr_t start, uintptr_t end) const {
+    auto view = std::views::join(sections);
+    auto it = view.begin();
+    std::advance(it, start - getTextSectionVirtualAddr());
+	auto range = std::ranges::subrange(it, view.end()) | std::views::take(end - start);
+    return this->contentToDisasm(start, range);
+}
+
 size_t Binary::instructionIndexFromAddr(uintptr_t addr) {
     const size_t addr_in_section = addr - getTextSectionVirtualAddr();
     auto checkpoint = std::lower_bound(_disass_checkpoints.begin(), _disass_checkpoints.end(),

@@ -29,6 +29,7 @@ class Binary {
         size_t instruction_ind) const;
     std::pair<size_t, uintptr_t> nextCheckpointFromCheckpoint(
         size_t instruction_ind) const;
+    std::string getFunctionInstructions(uintptr_t start, uintptr_t end) const;
 
     void setInstructionCount(size_t count) {_instruction_count = count;}
 
@@ -53,7 +54,7 @@ class Binary {
 
     template <typename Range>
     requires std::ranges::range<Range> std::string contentToDisasm(
-        const uintptr_t base_addr, const Range& view) {
+        const uintptr_t base_addr, const Range& view) const {
         std::stringstream disasm_stream;
         std::vector<uint8_t> bytes_vec =
             view | std::ranges::to<std::vector<uint8_t>>();
