@@ -6,6 +6,7 @@
 #include <LIEF/MachO.hpp>
 #include <LIEF/PE.hpp>
 #include <iostream>
+#include <optional>
 
 Binary::Binary(const std::string path) {
     _lief_binary = LIEF::Parser::parse(path);
@@ -264,10 +265,10 @@ void Binary::detectFunctions() {
     }
 }
 
-Function &Binary::get_function(std::string &name) {
+std::optional<Binary::Function> Binary::get_function(std::string &name) {
     for (auto& fn : _functions) {
         if (fn.getName() == name) {
-            return fn;
+            return std::optional<Binary::Function>(fn);
         }
     }
 }
