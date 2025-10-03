@@ -13,6 +13,8 @@
 #include "hex_iterator.hpp"
 #include "metadata/metadata.hpp"
 
+enum class BinType { ELF, PE, MACHO, UNKNOWN };
+
 class Binary {
    public:
     Binary() : _capstone_handle(0) {};
@@ -127,31 +129,9 @@ class Binary {
     BinType type = BinType::UNKNOWN;
 
    private:
-    std::unique_ptr<LIEF::Binary> _lief_binary;
     csh _capstone_handle;
     size_t _instruction_count = 0;
     uintptr_t _text_section_relative_addr = 0;
     const size_t _instructions_per_checkpoint = 100;
 };
 
-template <typename Range>
-requires std::ranges::range<Range> std::string contentToHex(
-    const uintptr_t base_addr, const Range& view) {
-    std::stringstream hex_stream;
-
-    size_t i = 0;
-    for (const auto& byte : view) {
-        if (i % 16 == 0) {
-            hex_stream << std::format("{:08X}: ", base_addr + i);
-        }
-
-        hex_stream << std::format("{:02X} ", static_cast<int>(byte));
-
-        if ((i + 1) % 16 == 0) {
-            hex_stream << "\n";
-        }
-        ++i;
-    }
-
-    return hex_stream.str();
-}
