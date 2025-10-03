@@ -13,6 +13,7 @@ struct BinSection {
     std::string name;
     uintptr_t offset;
     LIEF::span<const uint8_t> content;
+    LIEF::span<const uint8_t> padding;
     uintptr_t virtual_addr;
     void serialize(std::ostream& out) const;
     void deserialize(std::istream& in);
@@ -84,7 +85,7 @@ struct BinSection {
     //     return SectionIterator(this, true);
     // }
 
-    inline std::size_t size() const { return name.size() + content.size(); }
+    inline std::size_t size() const { return content.size() + padding.size(); }
 };
 
 inline bool operator==(const BinSection::SectionIterator& lhs,
