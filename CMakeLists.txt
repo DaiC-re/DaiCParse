@@ -7,7 +7,7 @@ set(TARGET_NAME DaiCLib)
 set(TARGET_INCLUDE_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(TARGET_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/md5.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/file_checksum.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/metadata/metadata.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/binary/hex_iterator.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/src/database/BinaryFormat.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/database/database.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/database/Symbol.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/src/binary/binary.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/collab_server/server.cpp)
+${CMAKE_CURRENT_SOURCE_DIR}/src/binary/binary.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/collab_server/server.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/binary_view/binary_view.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/hex_utils/hex_utils.cpp)
 
 #####################################
 # Support IDE Visualization
@@ -22,7 +22,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${TARGET_SOURCES})
 # else()
 add_library(${TARGET_NAME} STATIC ${TARGET_SOURCES}
     include/checksums/file_checksum.h include/checksums/md5.h include/checksums/md5_loc.h include/database/BinaryFormat.hpp include/database/database.hpp include/metadata/metadata.hpp
-    include/database/Symbol.hpp include/binary/binary.hpp include/collab_server/server.hpp)
+    include/database/Symbol.hpp include/binary/binary.hpp include/collab_server/server.hpp include/binary_view/binary_view.hpp include/hex_utils/hex_utils.hpp)
 # endif()
 
 set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
