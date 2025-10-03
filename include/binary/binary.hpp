@@ -22,7 +22,7 @@ class Binary {
 
     size_t getInstructionCount() const;
     uintptr_t getTextSectionVirtualAddr() const;
-    uintptr_t getImageBase() const;
+    //uintptr_t getImageBase() const;
     BinSection& getTextSection();
     const BinSection& getTextSection() const;
     std::pair<size_t, uintptr_t> closestCheckpointFromIndex(
@@ -123,6 +123,8 @@ class Binary {
     std::vector<BinSection> sections;
     std::vector<Function> _functions;
     std::vector<uintptr_t> _disass_checkpoints;
+    std::unique_ptr<LIEF::Binary> _lief_binary;
+    BinType type = BinType::UNKNOWN;
 
    private:
     std::unique_ptr<LIEF::Binary> _lief_binary;

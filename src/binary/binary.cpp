@@ -8,15 +8,30 @@
 #include <iostream>
 
 Binary::Binary(const std::string path) {
-    _lief_binary = LIEF::Parser::parse(path);
+    _lief_binary = LIEF::PE::Parser::parse(path);
+    type = BinType::PE;
     if (_lief_binary == nullptr) {
         std::cerr << "Failed to parse the binary" << std::endl;
         exit(1);
     }
+
+    if (LIEF::PE::Binary::classof(_lief_binary.get())) {
+        auto& pe = static_cast<LIEF::PE::Binary&>(*_lief_binary);
     for (auto& section : _lief_binary->sections()) {
-        this->sections.push_back(BinSection(section.name(), section.content(),
-                                            section.offset(),
+            this->sections.push_back(
+                BinSection(section.name(), section.content(), section.offset(),
                                             section.virtual_address()));
+            for (auto& section : this->sections) {
+                section.content = LIEF::span<const uint8_t>(
+                    section.content.data(), section.content.size());
+    }
+            std::cout
+                << std::hex
+                << std::format(
+                       "Section: {}, size: {:x}, offset: {:x}, vaddr: {:x}\n",
+                       section.name(), section.size(), section.offset(),
+                       section.virtual_address());
+        }
     }
     metadata = std::make_unique<BinaryMetadata>(_lief_binary, path);
     if (cs_open(CS_ARCH_X86, CS_MODE_64, &_capstone_handle) != CS_ERR_OK)
@@ -125,18 +140,18 @@ uintptr_t Binary::getTextSectionVirtualAddr() const {
     return _text_section_relative_addr;
 }
 
-uintptr_t Binary::getImageBase() const {
-    auto general = metadata->get_general();
-    auto finded = std::find_if(general.begin(), general.end(),
-                     [](auto& element) { return element.first == "Image base"; });
-    if (finded != general.end()) {
-        auto& val = *finded;
-        return std::stoi(val.second); 
-    } else {
-        throw std::runtime_error(
-            "Couldn't find the image base in the metadatas");
-    }
-}
+//uintptr_t Binary::getImageBase() const {
+//    auto general = metadata->get_general();
+//    auto finded = std::find_if(general.begin(), general.end(),
+//                     [](auto& element) { return element.first == "Image base"; });
+//    if (finded != general.end()) {
+//        auto& val = *finded;
+//        return std::stoi(val.second); 
+//    } else {
+//        throw std::runtime_error(
+//            "Couldn't find the image base in the metadatas");
+//    }
+//}
 
 BinSection& Binary::getTextSection() {
     auto text_section_it =
