@@ -208,7 +208,7 @@ void Binary::detectFunctions() {
     cs_insn* insn;
     size_t count =
         cs_disasm(_capstone_handle, bytes_vec.data(), bytes_vec.size() - 1,
-                  getImageBase() + _text_section_relative_addr, 0, &insn);
+                  getTextSectionVirtualAddr(), 0, &insn);
     std::vector<uintptr_t> called_functions;
     if (count > 0) {
         detectCalledFunctions(called_functions, insn, count);
@@ -220,8 +220,7 @@ void Binary::detectFunctions() {
 
             if (j % _instructions_per_checkpoint == 0) {
                 std::cout << "Added breakpoint <3\n";
-                addCheckPoint(ins.address - getImageBase() -
-                              _text_section_relative_addr);
+                addCheckPoint(ins.address);
             }
             // Detect function prologue for x86_64: push rbp; mov rbp, rsp
             // if (ins.bytes[0] == 0x55 && std::string_view(ins.op_str) == "rbp") {
@@ -270,8 +269,7 @@ void Binary::detectFunctions() {
             std::cout << fn.getStart() << " " << fn.getEnd() << " "
                       << fn.getName() << std::endl;
         }
-        addCheckPoint(insn[count - 1].address - getImageBase() -
-					  _text_section_relative_addr);
+        addCheckPoint(insn[count - 1].address);
         _instruction_count = count;
         std::cout << "instruction count: " << std::dec << _instruction_count << std::endl;
         cs_free(insn, count);
