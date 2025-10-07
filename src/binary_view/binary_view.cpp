@@ -12,7 +12,19 @@ BinaryView::BinaryView(const std::unique_ptr<Binary> &binary)
 //	return 0;
 //}
 
-std::vector<uint8_t> BinaryView::getSectionContentFromAddr(size_t addr, size_t content_size = CHUNK_SIZE) const {
+LIEF::Section *BinaryView::getNextSection(LIEF::Section *section) {
+    auto sections = _binary->_lief_binary->sections();
+
+    auto section_it = std::find_if(sections.begin(), sections.end(),
+                                   [section](auto &sec) { return &sec == section; });
+    ++section_it;
+
+    if (section_it == sections.end()) {
+        return nullptr;
+    }
+    return &(*section_it);
+}
+
 std::vector<uint8_t> BinaryView::getSectionContentFromAddr(size_t addr, size_t content_size = CHUNK_SIZE) {
     if (LIEF::PE::Binary::classof(_binary->_lief_binary.get())) {
         auto& pe = static_cast<LIEF::PE::Binary&>(*_binary->_lief_binary);
@@ -53,10 +65,17 @@ std::vector<uint8_t> BinaryView::getSectionContentFromAddr(size_t addr, size_t c
                   << "\n";
         std::cout << std::format("start_offset: {:#x}, range size: {:#x}\n",
                                  start_offset, std::ranges::distance(range));
-        
-        auto vector = std::ranges::to<std::vector>(range);
+
+        std::vector<uint8_t> vector = std::ranges::to<std::vector>(range);
         vector.resize(content_size);
         if (vector.size() != content_size) {
+            auto next_section = getNextSection(section);
+            if (addr + content_size >= next_section->virtual_address()) {
+                auto second_vector =
+                    getSectionContentFromAddr(next_section->virtual_address(),
+                                              content_size - vector.size());
+                vector.insert(vector.end(), second_vector.begin(), second_vector.end());
+            }
             std::fill(vector.begin() + vector.size(), vector.begin() + content_size, 0);
         }
         return vector;
