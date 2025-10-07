@@ -10,6 +10,7 @@ class BinaryView {
 		size_t addr, size_t content_size);
 	std::string viewHexChunk(
 		size_t addr);
+    LIEF::Section *getSectionAtAddr(uintptr_t addr);
     LIEF::Section *getNextSection(LIEF::Section* section);
 
    private:

@@ -8,9 +8,26 @@ constexpr size_t CHUNK_SIZE = 0x1000;
 BinaryView::BinaryView(const std::unique_ptr<Binary> &binary)
     : _binary(binary) {}
 
-//size_t BinaryView::getLineCount() const {
-//	return 0;
-//}
+LIEF::Section* BinaryView::getSectionAtAddr(uintptr_t virtual_addr) {
+    const auto &sections = _binary->_lief_binary->sections();
+
+    std::cout << std::format("Looking for section at addr: {:#x}\n",
+                             virtual_addr);
+
+    LIEF::Section *closest = nullptr;
+    uintptr_t closest_addr = 0;
+
+    for (auto &section : sections) {
+        auto sec_addr = section.virtual_address();
+        if (sec_addr <= virtual_addr) {
+            if (!closest || sec_addr > closest_addr) {
+                closest = &section;
+                closest_addr = sec_addr;
+            }
+        }
+    }
+    return closest;
+}
 
 LIEF::Section *BinaryView::getNextSection(LIEF::Section *section) {
     auto sections = _binary->_lief_binary->sections();
@@ -34,38 +51,17 @@ std::vector<uint8_t> BinaryView::getSectionContentFromAddr(size_t addr, size_t c
             "addr: {:#x}, section: {}\n", addr,
             section != nullptr ? section->name() : "nullptr");
         if (section == nullptr) {
-            //throw std::runtime_error("No section found at this address, dev error");
             std::cerr << "No section found at this address, dev error\n";
-            section = static_cast<LIEF::PE::Section *>(_last_section);
+            section = static_cast<LIEF::PE::Section *>(getSectionAtAddr(addr));
         }
-        _last_section = section;
         std::array<LIEF::span<const uint8_t>, 2> contents = {
             section->content(), section->padding()};
         auto start_offset = addr - section->virtual_address();
+        std::cout << std::format(
+            "addr: {:#x}, section addr: {:#x}, start_offset: {:#x}\n",
+                                 addr, section->virtual_address(), start_offset);
         auto i = 0;
-        for (auto &c : section->padding()) {
-            std::cout << section->padding().size_bytes() << "\n";
-            std::cout << std::format("{:02x} ", c);
-            ++i;
-        }
-        std::cout << "index: " << i
-                  << ", padding size: " << section->padding().size_bytes()
-                  << "\n";
-        std::cout << std::format(
-            "section: {}, virtual_address: {:#x}, size_of_raw_data: {:#x}, sizeof_raw_data: {:#x}, padding size: {:#x}\n",
-            section->name(), section->virtual_address(),
-            section->sizeof_raw_data(), section->sizeof_raw_data(),
-            section->padding().size());
-        std::cout << std::format(
-            "requested addr: {:#x}, content_size: {:#x}\n", addr, section->content().size());
-        
         auto range = contents | std::views::join | std::views::drop(start_offset) | std::views::take(content_size);
-        auto range_test = contents | std::views::join | std::views::drop(start_offset);
-        std::cout << "range_test size: " << std::ranges::distance(range_test)
-                  << "\n";
-        std::cout << std::format("start_offset: {:#x}, range size: {:#x}\n",
-                                 start_offset, std::ranges::distance(range));
-
         std::vector<uint8_t> vector = std::ranges::to<std::vector>(range);
         vector.resize(content_size);
         if (vector.size() != content_size) {
