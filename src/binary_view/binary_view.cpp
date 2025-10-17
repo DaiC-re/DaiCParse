@@ -108,15 +108,14 @@ std::string BinaryView::viewDisasmChunk(
 
 std::pair<uintptr_t , CheckPoint> BinaryView::getDisasmInstructionAddr(size_t index)
 {
-    auto text_section_va = _binary->getTextSectionVirtualAddr();
-    LIEF::Section* text_section = getSectionAtAddr(text_section_va);
-    if (!text_section) {
-        throw std::runtime_error("Text section not found");
-    }
-    auto text_content = getSectionContentFromAddr(text_section_va, 0x15 * _binary->_instructions_per_checkpoint);
-
+    //auto text_section_va = _binary->getTextSectionVirtualAddr();
+    //LIEF::Section* text_section = getSectionAtAddr(text_section_va);
+    //if (!text_section) {
+    //    throw std::runtime_error("Text section not found");
+    //}
     auto [check_point_index, check_point_addr] =
         _binary->closestCheckpointFromIndex(index);
+    auto text_content = getSectionContentFromAddr(check_point_addr, 0x15 * _binary->_instructions_per_checkpoint);
     auto it = text_content.begin();
     auto subrange_from_checkpoint = std::ranges::subrange(it, text_content.end());
 
