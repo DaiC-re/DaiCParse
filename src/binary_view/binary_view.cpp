@@ -2,6 +2,7 @@
 #include "hex_utils/hex_utils.hpp"
 #include <LIEF/PE/Binary.hpp>
 #include <LIEF/PE/Section.hpp>
+#include <utility>
 
 constexpr size_t CHUNK_SIZE = 0x1000;
 
@@ -31,7 +32,6 @@ LIEF::Section* BinaryView::getSectionAtAddr(uintptr_t virtual_addr) {
 
 LIEF::Section *BinaryView::getNextSection(LIEF::Section *section) {
     auto sections = _binary->_lief_binary->sections();
-
     auto section_it = std::find_if(sections.begin(), sections.end(),
                                    [section](auto &sec) { return &sec == section; });
     ++section_it;
@@ -83,7 +83,49 @@ std::vector<uint8_t> BinaryView::getSectionContentFromAddr(size_t addr, size_t c
 
 std::string BinaryView::viewHexChunk(size_t index) {
     auto addr = index * 0x10 + 0x1000;
-    auto span = _binary->_lief_binary->get_content_from_virtual_address(addr, CHUNK_SIZE);
     std::vector<uint8_t> content = getSectionContentFromAddr(addr);
     return contentToHex(addr, content);
+}
+
+std::string BinaryView::viewDisasmChunk(
+		size_t index)
+{
+    auto [instruction_addr, checkpoint] = getDisasmInstructionAddr(index);
+    std::cout << "addr: " << instruction_addr << "\n";
+
+    auto [next_check_point_index, next_check_point_addr] =
+        _binary->nextCheckpointFromCheckpoint(checkpoint.index);
+    if (next_check_point_index - index < 30) {
+        auto next_next_check_point_pair =
+            _binary->nextCheckpointFromCheckpoint(next_check_point_index);
+        next_check_point_index = next_next_check_point_pair.first;
+        next_check_point_addr = next_next_check_point_pair.second;
+    }
+    size_t size_between_checkpoints = next_check_point_addr - instruction_addr;
+    auto content = getSectionContentFromAddr(instruction_addr, size_between_checkpoints);
+    return _binary->contentToDisasm(instruction_addr, content);
+}
+
+std::pair<uintptr_t , CheckPoint> BinaryView::getDisasmInstructionAddr(size_t index)
+{
+    auto text_section_va = _binary->getTextSectionVirtualAddr();
+    LIEF::Section* text_section = getSectionAtAddr(text_section_va);
+    if (!text_section) {
+        throw std::runtime_error("Text section not found");
+    }
+    auto text_content = getSectionContentFromAddr(text_section_va, 0x15 * _binary->_instructions_per_checkpoint);
+
+    auto [check_point_index, check_point_addr] =
+        _binary->closestCheckpointFromIndex(index);
+    auto it = text_content.begin();
+    auto subrange_from_checkpoint = std::ranges::subrange(it, text_content.end());
+
+    auto instruction_addr = _binary->getTargetFromCheckpoint(
+        {check_point_index, check_point_addr}, index,
+        subrange_from_checkpoint);
+
+    return {
+        instruction_addr,
+        CheckPoint {check_point_index, check_point_addr}
+    };
 }

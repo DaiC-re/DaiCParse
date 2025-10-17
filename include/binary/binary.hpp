@@ -127,6 +127,7 @@ class Binary {
     std::vector<uintptr_t> _disass_checkpoints;
     std::unique_ptr<LIEF::Binary> _lief_binary;
     BinType type = BinType::UNKNOWN;
+    const size_t _instructions_per_checkpoint = 100;
 
    private:
     csh _capstone_handle;

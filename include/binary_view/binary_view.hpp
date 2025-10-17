@@ -1,6 +1,12 @@
 #pragma once
 
 #include "binary/binary.hpp"
+#include <ranges>
+
+struct CheckPoint {
+    size_t index;
+    uintptr_t addr;
+};
 
 class BinaryView {
    public:
@@ -10,10 +16,14 @@ class BinaryView {
 		size_t addr, size_t content_size);
 	std::string viewHexChunk(
 		size_t addr);
+	std::string viewDisasmChunk(
+		size_t addr);
     LIEF::Section *getSectionAtAddr(uintptr_t addr);
     LIEF::Section *getNextSection(LIEF::Section* section);
 
    private:
+    std::pair<uintptr_t , CheckPoint> getDisasmInstructionAddr(size_t index);
+
+   private:
 	const std::unique_ptr<Binary> &_binary;
-    LIEF::Section *_last_section = nullptr;
 };
