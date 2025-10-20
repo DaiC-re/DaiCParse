@@ -7,7 +7,9 @@
 constexpr size_t CHUNK_SIZE = 0x1000;
 
 BinaryView::BinaryView(const std::unique_ptr<Binary> &binary)
-    : _binary(binary) {}
+    : _binary(binary) {
+    _relative_text_addr = _binary->getTextSectionVirtualAddr();
+}
 
 LIEF::Section* BinaryView::getSectionAtAddr(uintptr_t virtual_addr) {
     const auto &sections = _binary->_lief_binary->sections();
@@ -81,7 +83,7 @@ std::vector<uint8_t> BinaryView::getSectionContentFromAddr(size_t addr, size_t c
 }
 
 std::string BinaryView::viewHexChunk(size_t index) {
-    auto addr = index * 0x10 + 0x1000;
+    auto addr = index * 0x10 + _relative_text_addr;
     std::vector<uint8_t> content = getSectionContentFromAddr(addr);
     return contentToHex(addr, content);
 }

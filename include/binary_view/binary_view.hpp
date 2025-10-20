@@ -26,4 +26,5 @@ class BinaryView {
 
    private:
 	const std::unique_ptr<Binary> &_binary;
+    uintptr_t _relative_text_addr = 0x1000;
 };
