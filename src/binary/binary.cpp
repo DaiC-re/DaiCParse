@@ -57,7 +57,7 @@ inline void Binary::addCheckPoint(uintptr_t offset) {
 // It returns the index (count of instruction) and real adress in the binary
 std::pair<size_t, uintptr_t> Binary::closestCheckpointFromIndex(
     size_t instruction_ind) const {
-    int index = instruction_ind / _instructions_per_checkpoint;
+    size_t index = instruction_ind / _instructions_per_checkpoint;
     auto closest_addr = _disass_checkpoints[index];
     return {index * _instructions_per_checkpoint, closest_addr};
 }
@@ -201,10 +201,11 @@ void Binary::detectCalledFunctions(std::vector<uintptr_t> &called_functions, cs_
 // Detect functions in the binary and also add checkpoints to load chunks of
 // binary efficiently, will probably create an "analyzeBinary" function instead
 void Binary::detectFunctions() {
-    auto& text_section = getTextSection();
-    _text_section_relative_addr = text_section.virtual_addr;
+    auto sections_range = std::ranges::join_view(sections);
+    _text_section_relative_addr = getTextSection().virtual_addr;
     std::vector<uint8_t> bytes_vec =
-        text_section | std::ranges::to<std::vector<uint8_t>>();
+        sections_range | std::ranges::to<std::vector<uint8_t>>();
+    std::cout << "Bytes vector size: " << bytes_vec.size() << std::endl;
     cs_insn* insn;
     size_t count =
         cs_disasm(_capstone_handle, bytes_vec.data(), bytes_vec.size() - 1,

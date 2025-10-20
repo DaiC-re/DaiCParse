@@ -60,7 +60,6 @@ std::vector<uint8_t> BinaryView::getSectionContentFromAddr(size_t addr, size_t c
         std::cout << std::format(
             "addr: {:#x}, section addr: {:#x}, start_offset: {:#x}\n",
                                  addr, section->virtual_address(), start_offset);
-        auto i = 0;
         auto range = contents | std::views::join | std::views::drop(start_offset) | std::views::take(content_size);
         std::vector<uint8_t> vector = std::ranges::to<std::vector>(range);
         vector.resize(content_size);

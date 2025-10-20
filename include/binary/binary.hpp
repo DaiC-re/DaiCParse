@@ -2,13 +2,12 @@
 #include <capstone/capstone.h>
 
 #include <LIEF/ELF/Binary.hpp>
-#include <format>
-#include <iomanip>
 #include <iostream>
-#include <ranges>
-#include <span>
-#include <sstream>
 #include <string>
+#include <ranges>
+#include <format>
+#include <sstream>
+#include <optional>
 
 #include "hex_iterator.hpp"
 #include "metadata/metadata.hpp"
@@ -27,8 +26,7 @@ class Binary {
     //uintptr_t getImageBase() const;
     BinSection& getTextSection();
     const BinSection& getTextSection() const;
-    std::pair<size_t, uintptr_t> closestCheckpointFromIndex(
-        size_t instruction_ind) const;
+    std::pair<size_t, uintptr_t> closestCheckpointFromIndex(size_t instruction_ind) const;
     std::pair<size_t, uintptr_t> nextCheckpointFromCheckpoint(
         size_t instruction_ind) const;
     std::string getFunctionInstructions(uintptr_t start, uintptr_t end) const;
@@ -133,6 +131,4 @@ class Binary {
     csh _capstone_handle;
     size_t _instruction_count = 0;
     uintptr_t _text_section_relative_addr = 0;
-    const size_t _instructions_per_checkpoint = 100;
 };
-
