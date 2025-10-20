@@ -17,14 +17,10 @@ Binary::Binary(const std::string path) {
 
     if (LIEF::PE::Binary::classof(_lief_binary.get())) {
         auto& pe = static_cast<LIEF::PE::Binary&>(*_lief_binary);
-    for (auto& section : _lief_binary->sections()) {
+        for (auto& section : pe.sections()) {
             this->sections.push_back(
                 BinSection(section.name(), section.content(), section.offset(),
                                             section.virtual_address()));
-            for (auto& section : this->sections) {
-                section.content = LIEF::span<const uint8_t>(
-                    section.content.data(), section.content.size());
-    }
             std::cout
                 << std::hex
                 << std::format(
@@ -32,6 +28,10 @@ Binary::Binary(const std::string path) {
                        section.name(), section.size(), section.offset(),
                        section.virtual_address());
         }
+        for (auto& section : this->sections) {
+            section.content = LIEF::span<const uint8_t>(
+                section.content.data(), section.content.size());
+    }
     }
     metadata = std::make_unique<BinaryMetadata>(_lief_binary, path);
     if (cs_open(CS_ARCH_X86, CS_MODE_64, &_capstone_handle) != CS_ERR_OK)
