@@ -93,7 +93,7 @@ size_t Binary::instructionIndexFromAddr(uintptr_t addr) {
     for (auto &cp : _disass_checkpoints) {
         std::cout << cp << " ";
     }
-    std::cout << addr << " " << getImageBase() << " " << getTextSectionVirtualAddr() << "\n";
+    //std::cout << addr << " " << getImageBase() << " " << getTextSectionVirtualAddr() << "\n";
     auto checkpoint_index =
         std::distance(_disass_checkpoints.begin(), checkpoint);
 
