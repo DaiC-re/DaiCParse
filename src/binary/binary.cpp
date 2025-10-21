@@ -21,7 +21,7 @@ Binary::Binary(const std::string path) {
         for (auto& section : pe.sections()) {
             this->sections.push_back(
                 BinSection(section.name(), section.content(), section.offset(),
-                                            section.virtual_address()));
+                                            section.virtual_address(), section.virtual_size()));
             std::cout
                 << std::hex
                 << std::format(
@@ -309,4 +309,20 @@ void Binary::Function::deserialize(std::istream& in) {
 
     in.read(reinterpret_cast<char*>(&_start), sizeof(uintptr_t));
     in.read(reinterpret_cast<char*>(&_end), sizeof(uintptr_t));
+}
+
+BinSection* Binary::section_from_rva(uint64_t virtual_address) {
+	const auto it_section = std::find_if(
+		std::begin(sections), std::end(sections),
+		[virtual_address](const BinSection& section) {
+			return section.virtual_addr <= virtual_address &&
+				   virtual_address < (section.virtual_addr +
+									  section.virtual_size);
+		});
+
+	if (it_section == std::end(sections)) {
+		return nullptr;
+	}
+
+	return &(*it_section);
 }
