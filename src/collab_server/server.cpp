@@ -8,7 +8,7 @@
 #include <filesystem>
 
 // todo: remove logs
-
+/*
 CollabServer::~CollabServer() {
     //close(_server_fd);
 }
@@ -148,3 +148,4 @@ CollabServer::statusRes CollabServer::startServerThread(int port) {
 
     return status;
 }
+*/
