@@ -1,4 +1,4 @@
-#include "binary/hex_iterator.hpp"
+#include "binary/bin_section.hpp"
 
 #include <iomanip>
 #include <span>
