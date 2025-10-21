@@ -80,11 +80,11 @@ std::string Binary::getFunctionInstructions(uintptr_t start, uintptr_t end) cons
 }
 
 size_t Binary::instructionIndexFromAddr(uintptr_t addr) {
-    const size_t addr_in_section = addr - getTextSectionVirtualAddr();
+    const size_t addr_in_section = addr;
     auto checkpoint = std::lower_bound(_disass_checkpoints.begin(), _disass_checkpoints.end(),
                          addr_in_section);
     if (checkpoint != _disass_checkpoints.begin()) {
-    --checkpoint; // Move to the closest checkpoint before the address
+		--checkpoint;
     } else {
         throw std::runtime_error("No checkpoint found before the given address");
     }
@@ -93,7 +93,6 @@ size_t Binary::instructionIndexFromAddr(uintptr_t addr) {
     for (auto &cp : _disass_checkpoints) {
         std::cout << cp << " ";
     }
-    //std::cout << addr << " " << getImageBase() << " " << getTextSectionVirtualAddr() << "\n";
     auto checkpoint_index =
         std::distance(_disass_checkpoints.begin(), checkpoint);
 
@@ -102,7 +101,7 @@ size_t Binary::instructionIndexFromAddr(uintptr_t addr) {
     const auto selected_chunk_size = next_checkpoint_addr - current_addr;
 
     std::vector<uint8_t> bytes_vec = std::views::join(sections) |
-                                     std::views::drop(current_addr) |
+                                     std::views::drop(current_addr - getTextSectionVirtualAddr()) |
                                      std::views::take(selected_chunk_size) |
                                      std::ranges::to<std::vector<uint8_t>>();
 
