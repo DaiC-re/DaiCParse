@@ -129,9 +129,9 @@ class Binary {
     std::unique_ptr<LIEF::Binary> _lief_binary;
     BinType type = BinType::UNKNOWN;
     const size_t _instructions_per_checkpoint = 100;
+    uintptr_t _text_section_relative_addr = 0;
 
    private:
     csh _capstone_handle;
     size_t _instruction_count = 0;
-    uintptr_t _text_section_relative_addr = 0;
 };

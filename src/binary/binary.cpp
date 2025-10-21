@@ -20,7 +20,7 @@ Binary::Binary(const std::string path) {
         auto& pe = static_cast<LIEF::PE::Binary&>(*_lief_binary);
         for (auto& section : pe.sections()) {
             this->sections.push_back(
-                BinSection(section.name(), section.content(), section.offset(),
+                BinSection(section.name(), section.content(), section.padding(), section.offset(),
                                             section.virtual_address(), section.virtual_size()));
             std::cout
                 << std::hex
@@ -37,6 +37,7 @@ Binary::Binary(const std::string path) {
     metadata = std::make_unique<BinaryMetadata>(_lief_binary, path);
     if (cs_open(CS_ARCH_X86, CS_MODE_64, &_capstone_handle) != CS_ERR_OK)
         throw std::runtime_error("Failed to open handle with capstone");
+    _text_section_relative_addr = getTextSection().virtual_addr;
     this->detectFunctions();
 }
 
@@ -44,6 +45,7 @@ Binary::Binary(std::istream& in) : _capstone_handle(0) {
     metadata = std::make_unique<BinaryMetadata>(_lief_binary, in);
     if (cs_open(CS_ARCH_X86, CS_MODE_64, &_capstone_handle) != CS_ERR_OK)
         throw std::runtime_error("Failed to open handle with capstone");
+    //_text_section_relative_addr = getTextSection().virtual_addr;
 }
 
 Binary::~Binary() {
@@ -202,7 +204,6 @@ void Binary::detectCalledFunctions(std::vector<uintptr_t> &called_functions, cs_
 // binary efficiently, will probably create an "analyzeBinary" function instead
 void Binary::detectFunctions() {
     auto sections_range = std::ranges::join_view(sections);
-    _text_section_relative_addr = getTextSection().virtual_addr;
     std::vector<uint8_t> bytes_vec =
         sections_range | std::ranges::to<std::vector<uint8_t>>();
     std::cout << "Bytes vector size: " << bytes_vec.size() << std::endl;
