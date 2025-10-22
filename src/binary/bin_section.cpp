@@ -83,6 +83,8 @@ void BinSection::serialize(std::ostream& out) const {
     out.write(reinterpret_cast<const char*>(&offset), sizeof(offset));
     out.write(reinterpret_cast<const char*>(&virtual_addr),
               sizeof(virtual_addr));
+    out.write(reinterpret_cast<const char*>(&virtual_size),
+              sizeof(virtual_size));
 
     uint32_t contentSize = content.size();
     out.write(reinterpret_cast<const char*>(&contentSize), sizeof(contentSize));
@@ -105,6 +107,8 @@ void BinSection::deserialize(std::istream& in) {
     in.read(reinterpret_cast<char*>(&offset), sizeof(offset));
     in.read(reinterpret_cast<char*>(&virtual_addr),
               sizeof(virtual_addr));
+    in.read(reinterpret_cast<char*>(&virtual_size),
+              sizeof(virtual_size));
 
     uint32_t contentSize;
     in.read(reinterpret_cast<char*>(&contentSize), sizeof(contentSize));
@@ -113,6 +117,10 @@ void BinSection::deserialize(std::istream& in) {
     _content_buffer_ptr = new uint8_t[contentSize];
     in.read(reinterpret_cast<char*>(_content_buffer_ptr), contentSize);
     content = LIEF::span<const uint8_t>(_content_buffer_ptr, contentSize);
+    //for (auto& c : content) {
+    //    std::cout << std::hex << std::setw(2) << std::setfill('0')
+    //              << static_cast<int>(c) << " ";
+    //}
 
     uint32_t paddingSize;
     in.read(reinterpret_cast<char*>(&paddingSize), sizeof(paddingSize));
