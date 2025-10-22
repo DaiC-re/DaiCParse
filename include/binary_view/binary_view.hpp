@@ -18,8 +18,8 @@ class BinaryView {
 		size_t addr);
 	std::string viewDisasmChunk(
 		size_t addr);
-    LIEF::Section *getSectionAtAddr(uintptr_t addr);
-    LIEF::Section *getNextSection(LIEF::Section* section);
+	BinSection *getSectionAtAddr(uintptr_t virtual_addr);
+    BinSection *getNextSection(BinSection *section);
 
    private:
     std::pair<uintptr_t , CheckPoint> getDisasmInstructionAddr(size_t index);

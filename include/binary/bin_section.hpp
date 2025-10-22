@@ -15,20 +15,25 @@ struct BinSection {
     LIEF::span<const uint8_t> content;
     LIEF::span<const uint8_t> padding;
     uintptr_t virtual_addr;
+    size_t virtual_size;
     void serialize(std::ostream& out) const;
     void deserialize(std::istream& in);
     class SectionIterator;
-    BinSection(std::string name, LIEF::span<const uint8_t> content,
-               uintptr_t offset, uintptr_t virtual_addr)
+    BinSection(std::string name, LIEF::span<const uint8_t> content, LIEF::span<const uint8_t> padding,
+               uintptr_t offset, uintptr_t virtual_addr, size_t virtual_size)
         : name(name),
           content(content),
+          padding(padding),
           offset(offset),
-          virtual_addr(virtual_addr) {}
+          virtual_addr(virtual_addr),
+          virtual_size(virtual_size)
+    {}
     BinSection() = default;
     ~BinSection();
 
    private:
-    uint8_t* _buffer_ptr = nullptr;
+    uint8_t* _content_buffer_ptr = nullptr;
+    uint8_t* _padding_buffer_ptr = nullptr;
 
    public:
     using iterator = decltype(content)::iterator;
@@ -41,6 +46,10 @@ struct BinSection {
     iterator end() { return content.end(); }
     const_iterator begin() const { return content.begin(); }
     const_iterator end() const { return content.end(); }
+    bool operator==(const BinSection& other) const {
+        return virtual_addr == other.virtual_addr &&
+               virtual_size == other.virtual_size;
+    }
 
     class SectionIterator {
        public:

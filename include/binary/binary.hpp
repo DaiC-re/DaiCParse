@@ -9,7 +9,7 @@
 #include <sstream>
 #include <optional>
 
-#include "hex_iterator.hpp"
+#include "bin_section.hpp"
 #include "metadata/metadata.hpp"
 
 enum class BinType { ELF, PE, MACHO, UNKNOWN };
@@ -32,6 +32,8 @@ class Binary {
     std::string getFunctionInstructions(uintptr_t start, uintptr_t end) const;
 
     void setInstructionCount(size_t count) {_instruction_count = count;}
+
+    BinSection* section_from_rva(uint64_t virtual_address);
 
     class Function {
        public:
@@ -127,9 +129,9 @@ class Binary {
     std::unique_ptr<LIEF::Binary> _lief_binary;
     BinType type = BinType::UNKNOWN;
     const size_t _instructions_per_checkpoint = 100;
+    uintptr_t _text_section_relative_addr = 0;
 
    private:
     csh _capstone_handle;
     size_t _instruction_count = 0;
-    uintptr_t _text_section_relative_addr = 0;
 };
