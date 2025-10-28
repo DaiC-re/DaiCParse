@@ -126,6 +126,9 @@ Database Database::deserialize(const std::string &filepath, std::unique_ptr<Bina
     deserializeData(db._binary->sections, in, fHeader.instructionOffset, fHeader.instructionSize);
     deserializeData(db._binary->_functions, in, fHeader.functionsOffset, fHeader.functionsSize);
     deserializeUint(db._binary->_disass_checkpoints, in, fHeader.checkpointOffset, fHeader.checkpointSize);
+    auto &text_section = db._binary->getTextSection();
+    db._binary->_text_section_relative_addr =
+        text_section.virtual_addr;
 
     db._binary->setInstructionCount(fHeader.instructionCount);
 

@@ -2,16 +2,17 @@
 #include <capstone/capstone.h>
 
 #include <LIEF/ELF/Binary.hpp>
-#include <format>
-#include <iomanip>
 #include <iostream>
-#include <ranges>
-#include <span>
-#include <sstream>
 #include <string>
+#include <ranges>
+#include <format>
+#include <sstream>
+#include <optional>
 
-#include "hex_iterator.hpp"
+#include "bin_section.hpp"
 #include "metadata/metadata.hpp"
+
+enum class BinType { ELF, PE, MACHO, UNKNOWN };
 
 class Binary {
    public:
@@ -22,15 +23,17 @@ class Binary {
 
     size_t getInstructionCount() const;
     uintptr_t getTextSectionVirtualAddr() const;
-    uintptr_t getImageBase() const;
+    //uintptr_t getImageBase() const;
     BinSection& getTextSection();
     const BinSection& getTextSection() const;
-    std::pair<size_t, uintptr_t> closestCheckpointFromAddr(
-        size_t instruction_ind) const;
+    std::pair<size_t, uintptr_t> closestCheckpointFromIndex(size_t instruction_ind) const;
     std::pair<size_t, uintptr_t> nextCheckpointFromCheckpoint(
         size_t instruction_ind) const;
+    std::string getFunctionInstructions(uintptr_t start, uintptr_t end) const;
 
     void setInstructionCount(size_t count) {_instruction_count = count;}
+
+    BinSection* section_from_rva(uint64_t virtual_address);
 
     class Function {
        public:
@@ -57,7 +60,7 @@ class Binary {
 
     template <typename Range>
     requires std::ranges::range<Range> std::string contentToDisasm(
-        const uintptr_t base_addr, const Range& view) {
+        const uintptr_t base_addr, const Range& view) const {
         std::stringstream disasm_stream;
         std::vector<uint8_t> bytes_vec =
             view | std::ranges::to<std::vector<uint8_t>>();
@@ -113,6 +116,7 @@ class Binary {
         throw std::runtime_error(
             "Target instruction index not found in the given range.");
     }
+    size_t instructionIndexFromAddr(uintptr_t addr);
 
    private:
     void detectFunctions();
@@ -121,37 +125,17 @@ class Binary {
     void detectCalledFunctions(std::vector<uintptr_t> &called_functions, cs_insn *insn, size_t count);
   
    public:
+    std::optional<Function> get_function(std::string &);
     std::unique_ptr<BinaryMetadata> metadata;
     std::vector<BinSection> sections;
     std::vector<Function> _functions;
     std::vector<uintptr_t> _disass_checkpoints;
+    std::unique_ptr<LIEF::Binary> _lief_binary;
+    BinType type = BinType::UNKNOWN;
+    const size_t _instructions_per_checkpoint = 100;
+    uintptr_t _text_section_relative_addr = 0;
 
    private:
-    std::unique_ptr<LIEF::Binary> _lief_binary;
     csh _capstone_handle;
     size_t _instruction_count = 0;
-    uintptr_t _text_section_relative_addr = 0;
-    const size_t _instructions_per_checkpoint = 100;
 };
-
-template <typename Range>
-requires std::ranges::range<Range> std::string contentToHex(
-    const uintptr_t base_addr, const Range& view) {
-    std::stringstream hex_stream;
-
-    size_t i = 0;
-    for (const auto& byte : view) {
-        if (i % 16 == 0) {
-            hex_stream << std::format("{:08X}: ", base_addr + i);
-        }
-
-        hex_stream << std::format("{:02X} ", static_cast<int>(byte));
-
-        if ((i + 1) % 16 == 0) {
-            hex_stream << "\n";
-        }
-        ++i;
-    }
-
-    return hex_stream.str();
-}

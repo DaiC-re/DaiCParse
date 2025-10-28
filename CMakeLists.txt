@@ -1,11 +1,14 @@
 #####################################
 # Define Target Information
 #####################################
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(TARGET_NAME DaiCLib)
 set(TARGET_INCLUDE_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(TARGET_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/md5.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/file_checksum.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/metadata/metadata.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/binary/hex_iterator.cpp
+set(TARGET_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/md5.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/file_checksum.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/metadata/metadata.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/binary/bin_section.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/src/database/BinaryFormat.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/database/database.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/database/Symbol.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/src/binary/binary.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/version/VersionControl.cpp)
+${CMAKE_CURRENT_SOURCE_DIR}/src/version/VersionControl.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/src/binary/binary.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/collab_server/server.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/binary_view/binary_view.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/hex_utils/hex_utils.cpp)
 
 #####################################
 # Support IDE Visualization
@@ -15,15 +18,15 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${TARGET_SOURCES})
 #####################################
 # Define Target according to options
 #####################################
-if(BUILD_SHARED_LIBS)
-  add_library(${TARGET_NAME} SHARED ${TARGET_SOURCES})
-else()
-  add_library(${TARGET_NAME} STATIC ${TARGET_SOURCES}
-      include/checksums/file_checksum.h include/checksums/md5.h include/checksums/md5_loc.h include/database/BinaryFormat.hpp include/database/database.hpp include/metadata/metadata.hpp
-      include/database/Symbol.hpp include/binary/binary.hpp include/version/VersionControl.hpp
-      include/binary/binary_hash.hpp)
-endif()
+# if(BUILD_SHARED_LIBS)
+  # add_library(${TARGET_NAME} SHARED ${TARGET_SOURCES})
+# else()
+add_library(${TARGET_NAME} STATIC ${TARGET_SOURCES}
+    include/checksums/file_checksum.h include/checksums/md5.h include/checksums/md5_loc.h include/database/BinaryFormat.hpp include/database/database.hpp include/metadata/metadata.hpp
+    include/database/Symbol.hpp include/binary/binary.hpp include/binary/bin_section.hpp include/collab_server/server.hpp include/binary_view/binary_view.hpp include/hex_utils/hex_utils.hpp include/version/VersionControl.hpp)
+# endif()
 
+set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 #####################################
 # Define Target Properties and Optional OpenSSL Dependency
 #####################################
