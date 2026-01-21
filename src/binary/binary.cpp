@@ -323,7 +323,16 @@ void Binary::Function::deserialize(std::istream& in) {
     in.read(reinterpret_cast<char*>(&_end), sizeof(uintptr_t));
 }
 
-Binary::Function* Binary::getFunctionAtAdress(uintptr_t addr) {
+Binary::Function* Binary::getFunctionAtAdress(uintptr_t addr) const {
+    for (auto& func : _functions) {
+        if (addr == func.getStart()) {
+            return &func;
+        }
+    }
+    return nullptr;
+}
+
+const Binary::Function* Binary::getFunctionAtAdress(uintptr_t addr) const {
     for (auto& func : _functions) {
         if (addr == func.getStart()) {
             return &func;
