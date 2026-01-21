@@ -2,12 +2,12 @@
 #include <capstone/capstone.h>
 
 #include <LIEF/ELF/Binary.hpp>
-#include <iostream>
-#include <string>
-#include <ranges>
 #include <format>
-#include <sstream>
+#include <iostream>
 #include <optional>
+#include <ranges>
+#include <sstream>
+#include <string>
 
 #include "bin_section.hpp"
 #include "metadata/metadata.hpp"
@@ -23,15 +23,16 @@ class Binary {
 
     size_t getInstructionCount() const;
     uintptr_t getTextSectionVirtualAddr() const;
-    //uintptr_t getImageBase() const;
+    // uintptr_t getImageBase() const;
     BinSection& getTextSection();
     const BinSection& getTextSection() const;
-    std::pair<size_t, uintptr_t> closestCheckpointFromIndex(size_t instruction_ind) const;
+    std::pair<size_t, uintptr_t> closestCheckpointFromIndex(
+        size_t instruction_ind) const;
     std::pair<size_t, uintptr_t> nextCheckpointFromCheckpoint(
         size_t instruction_ind) const;
     std::string getFunctionInstructions(uintptr_t start, uintptr_t end) const;
 
-    void setInstructionCount(size_t count) {_instruction_count = count;}
+    void setInstructionCount(size_t count) { _instruction_count = count; }
 
     BinSection* section_from_rva(uint64_t virtual_address);
 
@@ -41,13 +42,15 @@ class Binary {
         Function(std::string name, uintptr_t start, uintptr_t end)
             : _name(name), _start(start), _end(end) {}
 
-        std::string getName() const { return _name; }
+        const std::string getName() const { return _name; }
         uintptr_t getStart() const { return _start; }
         uintptr_t getEnd() const { return _end; }
+        uintptr_t getSize() const { return _end - _start; }
         void setName(const std::string& name) { _name = name; }
 
-        void serialize(std::ostream &out) const;
-        void deserialize(std::istream &in);
+        void serialize(std::ostream& out) const;
+        void deserialize(std::istream& in);
+
        private:
         std::string _name;
         uintptr_t _start;
@@ -118,10 +121,11 @@ class Binary {
     void detectFunctions();
     inline void addCheckPoint(uintptr_t offset);
     void add_function(uintptr_t start, uintptr_t end);
-    void detectCalledFunctions(std::vector<uintptr_t> &called_functions, cs_insn *insn, size_t count);
-  
+    void detectCalledFunctions(std::vector<uintptr_t>& called_functions,
+                               cs_insn* insn, size_t count);
+
    public:
-    std::optional<Function> get_function(std::string &);
+    std::optional<Function> get_function(std::string&);
     std::unique_ptr<BinaryMetadata> metadata;
     std::vector<BinSection> sections;
     std::vector<Function> _functions;
@@ -130,6 +134,8 @@ class Binary {
     BinType type = BinType::UNKNOWN;
     const size_t _instructions_per_checkpoint = 100;
     uintptr_t _text_section_relative_addr = 0;
+    Function* getFunctionAtAdress(uintptr_t addr);
+    Function* getFunctionAtAdress(uintptr_t addr);
 
    private:
     csh _capstone_handle;
