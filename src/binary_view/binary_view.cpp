@@ -6,7 +6,7 @@
 
 constexpr size_t CHUNK_SIZE = 0x1000;
 
-BinaryView::BinaryView(const std::unique_ptr<Binary> &binary)
+BinaryView::BinaryView(Binary *binary)
     : _binary(binary) {
     _relative_text_addr = _binary->getTextSectionVirtualAddr();
 }

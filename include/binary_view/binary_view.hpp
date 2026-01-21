@@ -10,7 +10,7 @@ struct CheckPoint {
 
 class BinaryView {
    public:
-	BinaryView(const std::unique_ptr<Binary> &binary);
+	BinaryView(Binary *binary);
 	~BinaryView() = default;
 	std::vector<uint8_t> getSectionContentFromAddr(
 		size_t addr, size_t content_size);
@@ -25,6 +25,6 @@ class BinaryView {
     std::pair<uintptr_t , CheckPoint> getDisasmInstructionAddr(size_t index);
 
    private:
-	const std::unique_ptr<Binary> &_binary;
+	Binary *_binary;
     uintptr_t _relative_text_addr = 0x1000;
 };
