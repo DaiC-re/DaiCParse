@@ -68,26 +68,25 @@ endif()
 target_link_libraries(${TARGET_NAME} PUBLIC LIEF::LIEF)
 target_link_libraries(${TARGET_NAME} PUBLIC capstone)
 
-if(BUILD_TESTING)
-  list(APPEND TEST_CASES
-    md5_test
-    hex_iterator_test
-  )
-  foreach(TEST_CASE ${TEST_CASES})
-    add_executable(${TEST_CASE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TEST_CASE}.cpp)
-    target_link_libraries(${TEST_CASE} PRIVATE ${TARGET_NAME} Catch2::Catch2WithMain)
-    target_compile_options(${TEST_CASE} PRIVATE ${compiler_options})
-    target_compile_definitions(${TEST_CASE} PRIVATE ${compiler_definitions} $<$<BOOL:${OPENSSL_FOUND}>:WITH_OPENSSL>)
-    target_link_options(${TEST_CASE} PRIVATE ${linker_flags})
+list(APPEND TEST_CASES
+md5_test
+hex_iterator_test
+db_symbols_test
+)
+foreach(TEST_CASE ${TEST_CASES})
+	add_executable(${TEST_CASE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TEST_CASE}.cpp)
+	target_link_libraries(${TEST_CASE} PRIVATE ${TARGET_NAME} Catch2::Catch2WithMain)
+	target_compile_options(${TEST_CASE} PRIVATE ${compiler_options})
+	target_compile_definitions(${TEST_CASE} PRIVATE ${compiler_definitions} $<$<BOOL:${OPENSSL_FOUND}>:WITH_OPENSSL>)
+	target_link_options(${TEST_CASE} PRIVATE ${linker_flags})
 
-    target_include_directories(${TEST_CASE}
-      PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/exports>
-      PRIVATE
-        ${TARGET_INCLUDE_FOLDER}
-        # Any other extra include required
-    )
+	target_include_directories(${TEST_CASE}
+	  PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/exports>
+	  PRIVATE
+		${TARGET_INCLUDE_FOLDER}
+		# Any other extra include required
+	)
 
-    add_test(NAME ${TEST_CASE} COMMAND ${TEST_CASE})
-  endforeach(TEST_CASE ${TEST_CASES})
-endif()
+	add_test(NAME ${TEST_CASE} COMMAND ${TEST_CASE})
+endforeach(TEST_CASE ${TEST_CASES})
