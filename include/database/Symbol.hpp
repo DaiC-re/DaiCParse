@@ -5,10 +5,9 @@
 
 class Function : public Symbol {
    public:
-    Function() {};
     Function(uint64_t startAddress, uint64_t endAddress,
              std::string name, std::vector<std::string> parameters, std::string returnType)
-        : _startAddress(startAddress), _endAddress(endAddress), _name(name), _parameters(parameters), _returnType(returnType){};
+        : Symbol(startAddress, name, DataType::function), _startAddress(startAddress), _endAddress(endAddress), _parameters(parameters), _returnType(returnType){};
     ~Function() {};
 
     uint64_t getStartAddress() const { return _startAddress;}
@@ -27,10 +26,8 @@ class Function : public Symbol {
    private:
     uint64_t _startAddress;
     uint64_t _endAddress;
-    std::string _name;
     std::vector<std::string> _parameters;
     std::string _returnType;
-    DataType _type = DataType::function;
 };
 
 
