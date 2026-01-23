@@ -252,12 +252,12 @@ void Binary::detectFunctions() {
             // }
             // Store the last ret instruction until the next function start and return the last ret instruction to get the function end
 
-            // Function qui chercherait à détecter tout les calls et qui sauvegarde l'adresse de destination dans un vecteur,
-            // une fois qu'on a ce vecteur on peut commencer detectFunctions classique, si on est à une adresse qui est dans
-            // le vecteur, on met current_function_start à cette adresse
+            // Function qui chercherait ï¿½ dï¿½tecter tout les calls et qui sauvegarde l'adresse de destination dans un vecteur,
+            // une fois qu'on a ce vecteur on peut commencer detectFunctions classique, si on est ï¿½ une adresse qui est dans
+            // le vecteur, on met current_function_start ï¿½ cette adresse
             if(std::find(called_functions.begin(), called_functions.end(), ins.address) != called_functions.end()) {
                 if (current_function_start != 0 && ret_instructions != 0) {
-                    add_function(current_function_start, ret_instructions);
+                    add_function(current_function_start, ret_instructions, j);
                     ret_instructions = 0;
                 }
                 current_function_start = ins.address;
@@ -287,10 +287,10 @@ std::optional<Binary::Function> Binary::get_function(std::string &name) {
     }
 }
 
-void Binary::add_function(uintptr_t start, uintptr_t end) {
+void Binary::add_function(uintptr_t start, uintptr_t end, size_t j) {
     auto function_name = std::string("function_") +
                          std::format("{:x}", start);
-    _functions.push_back(Function(function_name, start, end));
+    _functions.push_back(Function(function_name, start, end, j));
 }
 
 void Binary::Function::serialize(std::ostream& out) const {
@@ -300,6 +300,7 @@ void Binary::Function::serialize(std::ostream& out) const {
 
     out.write(reinterpret_cast<const char*>(&_start), sizeof(uintptr_t));
     out.write(reinterpret_cast<const char*>(&_end), sizeof(uintptr_t));
+    out.write(reinterpret_cast<const char*>(&_id), sizeof(uint64_t));
 }
 
 void Binary::Function::deserialize(std::istream& in) {
@@ -310,6 +311,7 @@ void Binary::Function::deserialize(std::istream& in) {
 
     in.read(reinterpret_cast<char*>(&_start), sizeof(uintptr_t));
     in.read(reinterpret_cast<char*>(&_end), sizeof(uintptr_t));
+    in.read(reinterpret_cast<char*>(&_id), sizeof(uint64_t));
 }
 
 BinSection* Binary::section_from_rva(uint64_t virtual_address) {

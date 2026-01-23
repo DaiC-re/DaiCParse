@@ -38,12 +38,13 @@ class Binary {
     class Function {
        public:
         Function() {};
-        Function(std::string name, uintptr_t start, uintptr_t end)
-            : _name(name), _start(start), _end(end) {}
+        Function(std::string name, uintptr_t start, uintptr_t end, size_t id)
+            : _name(name), _start(start), _end(end), _id(id) {}
 
         std::string getName() const { return _name; }
         uintptr_t getStart() const { return _start; }
         uintptr_t getEnd() const { return _end; }
+        uint64_t getId() const { return _id;}
         void setName(const std::string& name) { _name = name; }
 
         void serialize(std::ostream &out) const;
@@ -56,6 +57,7 @@ class Binary {
         std::string _name;
         uintptr_t _start;
         uintptr_t _end;
+        uint64_t _id;
     };
 
     template <typename Range>
@@ -121,7 +123,7 @@ class Binary {
    private:
     void detectFunctions();
     inline void addCheckPoint(uintptr_t offset);
-    void add_function(uintptr_t start, uintptr_t end);
+    void add_function(uintptr_t start, uintptr_t end, size_t j);
     void detectCalledFunctions(std::vector<uintptr_t> &called_functions, cs_insn *insn, size_t count);
   
    public:

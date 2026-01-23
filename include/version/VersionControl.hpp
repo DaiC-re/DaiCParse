@@ -11,6 +11,10 @@ class VCS {
    public:
     class CommitInfo {
        public:
+        CommitInfo(const std::filesystem::path path, int id)
+            : _commit_path(path.string()) {
+            _commit_number = id;
+        };
         CommitInfo(const std::string commit_path)
             : _commit_path(commit_path) {};
         ~CommitInfo() {};
@@ -18,6 +22,7 @@ class VCS {
         std::string get_commit_path() const { return _commit_path; };
         std::string get_commit_msg() const { return _commit_msg; };
         std::string get_commit_time() const { return _commit_time; };
+        int get_commit_number() const { return _commit_number;};
 
         void serialize_commit(const std::string commit_path, const std::string commit_msg, std::ostream &o);
         void deserialize_commit(const std::string commit_path, std::istream &i);
@@ -35,29 +40,28 @@ class VCS {
 
     class Commit {
        public:
-        Commit(std::filesystem::path path): _info(path.string()) {
-            _path = path;
-        };
-        Commit(const std::string staging_path): _info(staging_path){
-            _path = staging_path;
-
+        Commit(std::filesystem::path path): _path(path) {
+            _info = new CommitInfo(_path.string());
         }
-        ~Commit() {};
+        Commit(const std::string staging_path): _path(staging_path){
+            _info = new CommitInfo(_path.string());
+        }
+        Commit(std::filesystem::path path, Commit *staging, int id): _path(path) {
+            _info = new CommitInfo(_path.string(), id);
+            _fn = staging->_fn;
+        }
+        ~Commit() { delete _info;};
         std::filesystem::path _path;
-        CommitInfo _info;
+        CommitInfo *_info;
 
         std::vector<renamedFn> _fn;
-
-        enum Status {
-            STAGING = 0,
-            COMMITTED = 1
-        };
-
-        Status status = STAGING;
 
         void set_fn_list(std::vector<Binary::Function> renamed_list) {
             for (auto &func: renamed_list) {
                 renamedFn fn;
+                fn.function_id = func.getId();
+                fn.new_name = func.getName();
+                _fn.push_back(fn);
             }
 
         }
@@ -80,43 +84,39 @@ class VCS {
         _db_path = std::filesystem::path(project_path) / "1.db";
         if (isFileTracked()) {
             std::cout << "Version control system found\n";
+            deserialize_commits();
         } else {
             init(list);
         }
-        _commits = sort_commit_folders();
+        //_commits = sort_commit_folders();
     };
     ~VCS() {};
 
     void add(std::vector<Binary::Function>);
     void commit(const std::string);
     std::set<VCS::Commit*> _commits;
+    VCS::Commit *_staging = nullptr;
+
+    void deserialize_commits() {
+        std::filesystem::path new_commit_path = _staging_path / "commit_0";
+        _staging = new Commit(new_commit_path);
+        _staging->deserialize_commit(_staging->_path.string());
+        for (const auto &dir: std::filesystem::directory_iterator(_commit_path)) {
+            VCS::Commit *commit = new VCS::Commit(dir.path());
+            commit->deserialize_commit(commit->_path.string());
+            _commits.insert(commit);
+        }
+    }
+
+    VCS::Commit *get_staging_commit() {
+        for (auto &commit: _commits) {
+            if (commit->_info->get_commit_number() == 0)
+                return commit;
+        }
+        return nullptr;
+    }
 
     std::filesystem::path getCurrentPath() { return _current_path;};
-    void serializeCurrentList(std::vector<Binary::Function> list) {
-        std::ofstream out(std::format("{}/functions.db", _current_path.string(), std::ios::binary));
-        if (!out)
-            throw std::runtime_error("Failed to open file for writing");
-        size_t func_size = list.size();
-        out.write(reinterpret_cast<const char*>(&func_size), sizeof(func_size));
-        for (auto &func: list) {
-            func.serialize(out);
-        }
-    }
-    std::vector<Binary::Function> deserializeCurrentList() {
-        std::ifstream in(std::format("{}/functions.db", _current_path.string()), std::ios::binary);
-        std::vector<Binary::Function> list;
-        if (!in) {
-            return list;
-        }
-        size_t func_size;
-        in.read(reinterpret_cast<char*>(&func_size), sizeof(func_size));
-        for (size_t i = 0; i != func_size; i++) {
-            Binary::Function func;
-            func.deserialize(in);
-            list.push_back(func);
-        }
-        return list;
-    }
 
    private:
     std::filesystem::path _version_path;;

@@ -11,7 +11,6 @@ void VCS::init(std::vector<Binary::Function> list)
         std::filesystem::create_directory(_staging_path);
         std::filesystem::create_directory(_commit_path);
         std::filesystem::create_directory(_current_path);
-        serializeCurrentList(list);
     } catch (const std::filesystem::filesystem_error& e) {
         std::cerr << "Error creating directories: " << e.what() << std::endl;
     }
@@ -58,34 +57,37 @@ void VCS::add(std::vector<Binary::Function> renamed_func_list)
 {
     std::cout << "Adding changes to Staging in " << _staging_path.string() << std::endl;
 
-    auto commit_staging_path = _staging_path / "commit_0";
-    Commit commit(commit_staging_path.string());
-    commit.serialize_commit(commit._path.string(), "");
-    if (_commits.empty()) {
-        std::filesystem::path new_commit_path = _commit_path / "commit_0";
-        Commit *commit = new Commit(new_commit_path);
-        commit->serialize_commit(_staging_path.string(), "");
-        _commits.insert(commit);
+    if (_staging == nullptr) {
+        std::filesystem::path new_commit_path = _staging_path / "commit_0";
+        std::filesystem::create_directory(new_commit_path);
+        _staging = new Commit(new_commit_path);
+        _staging->set_fn_list(renamed_func_list);
+        _staging->serialize_commit(new_commit_path.string(), "");
         return;
     }
-    auto rit = _commits.rbegin();
-    Commit *last_commit = *rit;
-    if (last_commit->status == Commit::COMMITTED) {
-        std::string last_commit_str= last_commit->_path.string();
-        int last_commit_i = std::stoi(last_commit_str.substr(last_commit_str.find_last_of("_") + 1));
-        std::filesystem::path new_commit_path = _commit_path / ("commit_" + std::to_string(last_commit_i + 1));
+    _staging->set_fn_list(renamed_func_list);
+    _staging->serialize_commit(_staging->_path.string(), "");
+}
+
+void VCS::commit(const std::string commit_msg)
+{
+    if (_staging && !_commits.empty()) {
+        auto rit = _commits.rbegin();
+        Commit *last_commit = *rit;
+        int last_commit_id = last_commit->_info->get_commit_number();
+        std::filesystem::path new_commit_path = _commit_path / ("commit_" + std::to_string(last_commit_id + 1));
         std::filesystem::create_directory(new_commit_path);
-        Commit *commit = new Commit(new_commit_path);
+        Commit *commit = new Commit(new_commit_path, _staging, last_commit_id + 1);
         commit->serialize_commit(commit->_path.string(), commit_msg);
         _commits.insert(commit);
     } else {
-        last_commit->serialize_commit(commit->)
+        std::filesystem::path new_commit_path = _commit_path / ("commit_1");
+        std::filesystem::create_directory(new_commit_path);
+        Commit *commit = new Commit(new_commit_path, _staging, 1);
+        commit->serialize_commit(commit->_path.string(), commit_msg);
+        _commits.insert(commit);
     }
-}
-
-void VCS::commit(const std::string commit_msg, Commit *commit)
-{
-
+    _staging->_fn.clear();
 }
 
 void VCS::CommitInfo::serialize_commit(const std::string commit_path, const std::string commit_msg, std::ostream &out)
@@ -124,7 +126,7 @@ void VCS::Commit::serialize_commit(const std::string commit_path, const std::str
 {
     std::filesystem::path commit_file = std::filesystem::path(commit_path) / "commit_info.info";
     std::ofstream out(commit_file.string(), std::ios::binary);
-    this->_info.serialize_commit(commit_path, commit_msg, out);
+    this->_info->serialize_commit(commit_path, commit_msg, out);
 
     uint32_t fnSize = _fn.size();
     out.write(reinterpret_cast<const char*>(&fnSize), sizeof(fnSize));
@@ -142,10 +144,9 @@ void VCS::Commit::deserialize_commit(const std::string commit_path)
 {
     std::filesystem::path commit_file = std::filesystem::path(commit_path) / "commit_info.info";
     std::ifstream in(commit_file.string(), std::ios::binary);
-    this->_info.deserialize_commit(commit_path, in);
+    this->_info->deserialize_commit(commit_path, in);
     uint32_t fnSize;
     in.read(reinterpret_cast<char*>(&fnSize), sizeof(fnSize));
-
     for (uint32_t i = 0; i < fnSize; i++) {
         renamedFn fn;
         in.read(reinterpret_cast<char*>(&fn.function_id), sizeof(fn.function_id));
