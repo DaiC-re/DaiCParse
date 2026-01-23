@@ -24,7 +24,7 @@ class Metadata {
 
 class IDataType: public Metadata {
    public:
-    explicit IDataType() {};
+    explicit IDataType(DataType type): _type(type) {};
     virtual ~IDataType() = default;
     virtual void serialize(std::ostream &out) const = 0;
     virtual void deserialize(std::istream &in) = 0;
@@ -44,13 +44,12 @@ class IDataType: public Metadata {
         }
     }
 
-   private:
+   protected:
     DataType _type;
 };
 
 class Instruction: public Metadata {
    public:
-    Instruction() {};
     Instruction(uint64_t addr, const std::vector<uint8_t> bytes,
         const std::string &mnemo, const std::vector<std::string> op)
         : _address(addr), _bytes(bytes), _mnemo(mnemo), _op(op) {}
@@ -77,9 +76,8 @@ class Instruction: public Metadata {
 
 class Symbol: public IDataType {
    public:
-    Symbol() {};
     Symbol(uint64_t addr, const std::string &name, DataType type)
-        : _address(addr), _name(name), _type(type) {}
+        : IDataType(type), _address(addr), _name(name) {}
     ~Symbol() {};
     uint64_t getAddress() const {return _address;};
     std::string getName() const {return _name;};
@@ -95,16 +93,14 @@ class Symbol: public IDataType {
    private:
     uint64_t _address;
 
-   protected:
+   public:
     std::string _name;
-    DataType _type;
 };
 
 class CrossReference: public IDataType {
    public:
-    CrossReference() {};
     CrossReference(uint64_t fromAddress, uint64_t toAddress, DataType type)
-        : _fromAddress(fromAddress), _toAddress(toAddress), _type(type) {};
+        : IDataType(type), _fromAddress(fromAddress), _toAddress(toAddress) {};
     ~CrossReference() {};
     void serialize(std::ostream &out) const override;
     void deserialize(std::istream &in) override;
@@ -118,7 +114,6 @@ class CrossReference: public IDataType {
    private:
     uint64_t _fromAddress;
     uint64_t _toAddress;
-    DataType _type;
 };
 
 #endif  // BINARYFORMAT_HPP
