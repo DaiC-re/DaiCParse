@@ -35,12 +35,20 @@ class CollabServer : public QObject
         void on_peer_error();
 
     private:
+        struct PeerState {
+            std::unique_ptr<QTcpSocket> socket;
+            QByteArray buffer;
+            quint32 expected_message_length = 0;
+        };
+
         void send_message_to_peers(const std::string& message, QTcpSocket* sender_socket);
         void handle_peer_data(QTcpSocket* peer_socket, const std::string& message);
         statusRes start_server(int port);
+        void send_message_internal(QTcpSocket* socket, const std::string& message);
+        bool try_process_message(PeerState& peer_state);
 
         std::unique_ptr<QTcpServer> _server;
-        std::vector<std::unique_ptr<QTcpSocket>> _peers;
+        std::vector<PeerState> _peers;
         std::mutex _peers_mutex;
         bool _is_online;
 };

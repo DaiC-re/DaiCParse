@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <QHostAddress>
 #include <QByteArray>
+#include <QDataStream>
 
 CollabServer::CollabServer(QObject* parent)
     : QObject(parent), _server(nullptr), _is_online(false)
@@ -14,9 +15,9 @@ CollabServer::CollabServer(QObject* parent)
 
 CollabServer::~CollabServer() {
     std::lock_guard<std::mutex> lock(_peers_mutex);
-    for (auto& peer : _peers) {
-        if (peer && peer->state() == QTcpSocket::ConnectedState) {
-            peer->disconnectFromHost();
+    for (auto& peer_state : _peers) {
+        if (peer_state.socket && peer_state.socket->state() == QTcpSocket::ConnectedState) {
+            peer_state.socket->disconnectFromHost();
         }
     }
     if (_server) {
@@ -40,7 +41,9 @@ CollabServer::statusRes CollabServer::connect_to_peer(const std::string& ip, int
 
     {
         std::lock_guard<std::mutex> lock(_peers_mutex);
-        _peers.push_back(std::move(peer_socket));
+        PeerState peer_state;
+        peer_state.socket = std::move(peer_socket);
+        _peers.push_back(std::move(peer_state));
     }
 
     _is_online = true;
@@ -48,7 +51,7 @@ CollabServer::statusRes CollabServer::connect_to_peer(const std::string& ip, int
 }
 
 void CollabServer::send_file_to_peers(std::string file_path, std::string project_name) {
-    std::ifstream text(file_path);
+    std::ifstream text(file_path, std::ios::binary);
     std::stringstream buffer;
     size_t pos = file_path.find_last_of("/\\");
     std::string new_file_path = file_path.substr(0, pos + 1) + project_name + "_" + file_path.substr(pos + 1);
@@ -63,15 +66,27 @@ void CollabServer::send_message_to_peers(const std::string &message, QTcpSocket*
     std::lock_guard<std::mutex> lock(_peers_mutex);
     std::cout << "Sending to " << _peers.size() << " peers" << std::endl;
 
-    QByteArray data(message.c_str(), message.size());
-
-    for (auto& peer : _peers) {
-        if (peer && peer.get() != sender_socket && peer->state() == QTcpSocket::ConnectedState) {
+    for (auto& peer_state : _peers) {
+        if (peer_state.socket && peer_state.socket.get() != sender_socket && 
+            peer_state.socket->state() == QTcpSocket::ConnectedState) {
             std::cout << "Sending to peer" << std::endl;
-            peer->write(data);
-            peer->flush();
+            send_message_internal(peer_state.socket.get(), message);
         }
     }
+}
+
+void CollabServer::send_message_internal(QTcpSocket* socket, const std::string& message) {
+    QByteArray packet;
+    QDataStream stream(&packet, QIODevice::WriteOnly);
+    stream.setVersion(QDataStream::Qt_6_0);
+    
+    // Write message length as header
+    stream << static_cast<quint32>(message.size());
+    // Write message data
+    packet.append(message.c_str(), message.size());
+    
+    socket->write(packet);
+    socket->flush();
 }
 
 void CollabServer::on_peer_connected() {
@@ -84,8 +99,8 @@ void CollabServer::on_peer_disconnected() {
     std::lock_guard<std::mutex> lock(_peers_mutex);
     _peers.erase(
         std::remove_if(_peers.begin(), _peers.end(),
-            [](const std::unique_ptr<QTcpSocket>& peer) {
-                return !peer || peer->state() != QTcpSocket::ConnectedState;
+            [](const PeerState& peer_state) {
+                return !peer_state.socket || peer_state.socket->state() != QTcpSocket::ConnectedState;
             }),
         _peers.end()
     );
@@ -95,13 +110,31 @@ void CollabServer::on_peer_disconnected() {
     }
 }
 
-void CollabServer::on_peer_ready_read() {
-    QTcpSocket* peer_socket = qobject_cast<QTcpSocket*>(sender());
-    if (!peer_socket) return;
-
-    QByteArray data = peer_socket->readAll();
-    std::string message(data.constData(), data.size());
-
+bool CollabServer::try_process_message(PeerState& peer_state) {
+    if (peer_state.expected_message_length == 0) {
+        // Try to read the message length header
+        if (peer_state.buffer.size() < static_cast<int>(sizeof(quint32))) {
+            return false; // Need more data for the header
+        }
+        
+        QDataStream stream(&peer_state.buffer, QIODevice::ReadOnly);
+        stream.setVersion(QDataStream::Qt_6_0);
+        stream >> peer_state.expected_message_length;
+    }
+    
+    // Check if we have the complete message
+    if (peer_state.buffer.size() < static_cast<int>(sizeof(quint32) + peer_state.expected_message_length)) {
+        return false;
+    }
+    
+    // Extract the message data
+    std::string message(peer_state.buffer.constData() + sizeof(quint32), peer_state.expected_message_length);
+    
+    // Remove processed data from buffer
+    peer_state.buffer.remove(0, sizeof(quint32) + peer_state.expected_message_length);
+    peer_state.expected_message_length = 0;
+    
+    // Process the message
     if (message.find("DaicFile") == 0) {
         std::string first_line = message.substr(0, message.find("\n"));
         std::string file_name = first_line.substr(first_line.find_last_of("/\\") + 1);
@@ -116,9 +149,31 @@ void CollabServer::on_peer_ready_read() {
         std::fstream s {file_tmp_path, std::ios::binary | std::ios::trunc | std::ios::in | std::ios::out};
         s.write(file_content.c_str(), file_content.size());
         s.seekp(0);
+        s.close();
     }
 
-    handle_peer_data(peer_socket, message);
+    handle_peer_data(peer_state.socket.get(), message);
+    
+    return true;
+}
+
+void CollabServer::on_peer_ready_read() {
+    QTcpSocket* peer_socket = qobject_cast<QTcpSocket*>(sender());
+    if (!peer_socket) return;
+
+    std::lock_guard<std::mutex> lock(_peers_mutex);
+    
+    // Find the peer state for this socket
+    auto peer_it = std::find_if(_peers.begin(), _peers.end(),
+        [peer_socket](const PeerState& ps) { return ps.socket.get() == peer_socket; });
+    
+    if (peer_it == _peers.end()) return;
+    
+    // Append new data to the buffer
+    peer_it->buffer.append(peer_socket->readAll());
+    
+    while (try_process_message(*peer_it)) {
+    }
 }
 
 void CollabServer::on_peer_error() {
@@ -129,25 +184,23 @@ void CollabServer::on_peer_error() {
 }
 
 void CollabServer::handle_peer_data(QTcpSocket* peer_socket, const std::string& message) {
-    // This function is a placeholder for handling peer data
-    // Implement custom logic here as needed
 }
 
 void CollabServer::on_new_connection() {
     QTcpSocket* peer_socket = _server->nextPendingConnection();
     if (!peer_socket) return;
 
-    auto peer = std::make_unique<QTcpSocket>();
-    peer.reset(peer_socket);
-
-    connect(peer.get(), &QTcpSocket::connected, this, &CollabServer::on_peer_connected);
-    connect(peer.get(), &QTcpSocket::disconnected, this, &CollabServer::on_peer_disconnected);
-    connect(peer.get(), &QTcpSocket::readyRead, this, &CollabServer::on_peer_ready_read);
-    connect(peer.get(), &QTcpSocket::errorOccurred, this, [this]() { on_peer_error(); });
+    connect(peer_socket, &QTcpSocket::connected, this, &CollabServer::on_peer_connected);
+    connect(peer_socket, &QTcpSocket::disconnected, this, &CollabServer::on_peer_disconnected);
+    connect(peer_socket, &QTcpSocket::readyRead, this, &CollabServer::on_peer_ready_read);
+    connect(peer_socket, &QTcpSocket::errorOccurred, this, [this]() { on_peer_error(); });
 
     {
         std::lock_guard<std::mutex> lock(_peers_mutex);
-        _peers.push_back(std::move(peer));
+        PeerState peer_state;
+        peer_state.socket = std::make_unique<QTcpSocket>();
+        peer_state.socket.reset(peer_socket);
+        _peers.push_back(std::move(peer_state));
     }
 
     _is_online = true;
@@ -171,9 +224,6 @@ CollabServer::statusRes CollabServer::startServerThread(int port) {
 
     if (!status.code)
         return status;
-
-    // Note: Qt signal/slot mechanism handles threading automatically through the event loop
-    // No explicit thread creation needed
 
     return status;
 }
