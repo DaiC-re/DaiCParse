@@ -5,6 +5,15 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(TARGET_NAME DaiCLib)
 set(TARGET_INCLUDE_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# Find Qt6 for networking (needs to be before target creation for MOC)
+find_package(Qt6 REQUIRED COMPONENTS Core Network)
+
+# Enable Qt's MOC for this library
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
 set(TARGET_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/md5.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/file_checksum.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/metadata/metadata.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/binary/bin_section.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/src/database/BinaryFormat.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/database/database.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/database/Symbol.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/src/version/VersionControl.cpp
@@ -68,6 +77,7 @@ if(OPENSSL_FOUND)
 endif()
 target_link_libraries(${TARGET_NAME} PUBLIC LIEF::LIEF)
 target_link_libraries(${TARGET_NAME} PUBLIC capstone)
+target_link_libraries(${TARGET_NAME} PUBLIC Qt6::Core Qt6::Network)
 
 if(BUILD_TESTING)
 	list(APPEND TEST_CASES
