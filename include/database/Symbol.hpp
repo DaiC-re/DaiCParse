@@ -5,12 +5,11 @@
 
 class Function : public Symbol {
    public:
-    Function() {};
     Function(uint64_t startAddress, uint64_t endAddress, std::string name,
              std::vector<std::string> parameters, std::string returnType)
-        : _startAddress(startAddress),
+        : Symbol(startAddress, name, DataType::function),
+          _startAddress(startAddress),
           _endAddress(endAddress),
-          _name(name),
           _parameters(parameters),
           _returnType(returnType) {};
     ~Function() {};

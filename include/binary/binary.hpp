@@ -48,11 +48,13 @@ class Binary {
         uintptr_t getSize() const { return _end - _start; }
         void serialize(std::ostream& out) const;
         void deserialize(std::istream& in);
-        uint64_t getId() const { return _id;}
+        uint64_t getId() const { return _id; }
         void setName(const std::string& name) { _name = name; }
-        bool operator==(const Function &other) const {
+        bool operator==(const Function& other) const {
             return _name == other._name && _start == other._start &&
-                   _end == other._end;};
+                   _end == other._end;
+        };
+
        private:
         std::string _name;
         uintptr_t _start;
@@ -123,7 +125,7 @@ class Binary {
    private:
     void detectFunctions();
     inline void addCheckPoint(uintptr_t offset);
-    void add_function(uintptr_t start, uintptr_t end);
+    void add_function(uintptr_t start, uintptr_t end, int size);
     void detectCalledFunctions(std::vector<uintptr_t>& called_functions,
                                cs_insn* insn, size_t count);
 

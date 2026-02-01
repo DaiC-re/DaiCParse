@@ -299,9 +299,9 @@ std::optional<Binary::Function> Binary::get_function(std::string& name) {
     }
 }
 
-void Binary::add_function(uintptr_t start, uintptr_t end) {
+void Binary::add_function(uintptr_t start, uintptr_t end, int size) {
     auto function_name = std::string("function_") + std::format("{:x}", start);
-    _functions.push_back(Function(function_name, start, end));
+    _functions.push_back(Function(function_name, start, end, size));
 }
 
 void Binary::Function::serialize(std::ostream& out) const {
