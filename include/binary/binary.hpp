@@ -39,22 +39,25 @@ class Binary {
     class Function {
        public:
         Function() {};
-        Function(std::string name, uintptr_t start, uintptr_t end)
-            : _name(name), _start(start), _end(end) {}
+        Function(std::string name, uintptr_t start, uintptr_t end, size_t id)
+            : _name(name), _start(start), _end(end), _id(id) {}
 
         const std::string getName() const { return _name; }
         uintptr_t getStart() const { return _start; }
         uintptr_t getEnd() const { return _end; }
         uintptr_t getSize() const { return _end - _start; }
-        void setName(const std::string& name) { _name = name; }
-
         void serialize(std::ostream& out) const;
         void deserialize(std::istream& in);
-
+        uint64_t getId() const { return _id;}
+        void setName(const std::string& name) { _name = name; }
+        bool operator==(const Function &other) const {
+            return _name == other._name && _start == other._start &&
+                   _end == other._end;};
        private:
         std::string _name;
         uintptr_t _start;
         uintptr_t _end;
+        uint64_t _id;
     };
 
     template <typename Range>

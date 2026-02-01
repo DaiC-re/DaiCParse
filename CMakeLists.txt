@@ -5,8 +5,18 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(TARGET_NAME DaiCLib)
 set(TARGET_INCLUDE_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# Find Qt6 for networking (needs to be before target creation for MOC)
+find_package(Qt6 REQUIRED COMPONENTS Core Network)
+
+# Enable Qt's MOC for this library
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
 set(TARGET_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/md5.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/checksums/file_checksum.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/metadata/metadata.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/binary/bin_section.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/src/database/BinaryFormat.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/database/database.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/database/Symbol.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/src/version/VersionControl.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/src/binary/binary.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/collab_server/server.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/binary_view/binary_view.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/hex_utils/hex_utils.cpp)
 
 #####################################
@@ -22,7 +32,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${TARGET_SOURCES})
 # else()
 add_library(${TARGET_NAME} STATIC ${TARGET_SOURCES}
     include/checksums/file_checksum.h include/checksums/md5.h include/checksums/md5_loc.h include/database/BinaryFormat.hpp include/database/database.hpp include/metadata/metadata.hpp
-    include/database/Symbol.hpp include/binary/binary.hpp include/binary/bin_section.hpp include/collab_server/server.hpp include/binary_view/binary_view.hpp include/hex_utils/hex_utils.hpp)
+    include/database/Symbol.hpp include/binary/binary.hpp include/binary/bin_section.hpp include/collab_server/server.hpp include/binary_view/binary_view.hpp include/hex_utils/hex_utils.hpp include/version/VersionControl.hpp)
 # endif()
 
 set_target_properties(${TARGET_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -67,27 +77,29 @@ if(OPENSSL_FOUND)
 endif()
 target_link_libraries(${TARGET_NAME} PUBLIC LIEF::LIEF)
 target_link_libraries(${TARGET_NAME} PUBLIC capstone)
+target_link_libraries(${TARGET_NAME} PUBLIC Qt6::Core Qt6::Network)
 
 if(BUILD_TESTING)
-  list(APPEND TEST_CASES
-    md5_test
-    hex_iterator_test
-  )
-  foreach(TEST_CASE ${TEST_CASES})
-    add_executable(${TEST_CASE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TEST_CASE}.cpp)
-    target_link_libraries(${TEST_CASE} PRIVATE ${TARGET_NAME} Catch2::Catch2WithMain)
-    target_compile_options(${TEST_CASE} PRIVATE ${compiler_options})
-    target_compile_definitions(${TEST_CASE} PRIVATE ${compiler_definitions} $<$<BOOL:${OPENSSL_FOUND}>:WITH_OPENSSL>)
-    target_link_options(${TEST_CASE} PRIVATE ${linker_flags})
+	list(APPEND TEST_CASES
+	md5_test
+	hex_iterator_test
+	db_symbols_test
+	)
+	foreach(TEST_CASE ${TEST_CASES})
+		add_executable(${TEST_CASE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TEST_CASE}.cpp)
+		target_link_libraries(${TEST_CASE} PRIVATE ${TARGET_NAME} Catch2::Catch2WithMain)
+		target_compile_options(${TEST_CASE} PRIVATE ${compiler_options})
+		target_compile_definitions(${TEST_CASE} PRIVATE ${compiler_definitions} $<$<BOOL:${OPENSSL_FOUND}>:WITH_OPENSSL>)
+		target_link_options(${TEST_CASE} PRIVATE ${linker_flags})
 
-    target_include_directories(${TEST_CASE}
-      PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/exports>
-      PRIVATE
-        ${TARGET_INCLUDE_FOLDER}
-        # Any other extra include required
-    )
+		target_include_directories(${TEST_CASE}
+		  PUBLIC
+			$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/exports>
+		  PRIVATE
+			${TARGET_INCLUDE_FOLDER}
+			# Any other extra include required
+		)
 
-    add_test(NAME ${TEST_CASE} COMMAND ${TEST_CASE})
-  endforeach(TEST_CASE ${TEST_CASES})
+		add_test(NAME ${TEST_CASE} COMMAND ${TEST_CASE})
+	endforeach(TEST_CASE ${TEST_CASES})
 endif()

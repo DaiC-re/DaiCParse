@@ -31,6 +31,8 @@ class Database {
     Database(std::unique_ptr<Binary> &binary, const std::string &path): _binary(binary), _path(path) {};
     ~Database() {}
 
+    std::string getPath() const { return _path;};
+
     std::unique_ptr<BinaryMetadata> &getMetadata() const { return _binary->metadata;};
 
     void createProject(const std::string &path);

@@ -32,10 +32,8 @@ class Function : public Symbol {
    private:
     uint64_t _startAddress;
     uint64_t _endAddress;
-    std::string _name;
     std::vector<std::string> _parameters;
     std::string _returnType;
-    DataType _type = DataType::function;
 };
 
 #endif  // SYMBOL_HPP
