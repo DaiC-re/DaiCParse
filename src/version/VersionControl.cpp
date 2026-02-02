@@ -14,6 +14,13 @@ void VCS::init(std::vector<Binary::Function> list)
     } catch (const std::filesystem::filesystem_error& e) {
         std::cerr << "Error creating directories: " << e.what() << std::endl;
     }
+    if (_staging == nullptr) {
+        std::filesystem::path new_commit_path = _staging_path / "commit_0";
+        std::filesystem::create_directory(new_commit_path);
+        _staging = new Commit(new_commit_path);
+        _staging->serialize_commit(new_commit_path.string(), "");
+        return;
+    }
 }
 
 void VCS::copy_current_db()
@@ -57,14 +64,6 @@ void VCS::add(std::vector<Binary::Function> renamed_func_list)
 {
     std::cout << "Adding changes to Staging in " << _staging_path.string() << std::endl;
 
-    if (_staging == nullptr) {
-        std::filesystem::path new_commit_path = _staging_path / "commit_0";
-        std::filesystem::create_directory(new_commit_path);
-        _staging = new Commit(new_commit_path);
-        _staging->set_fn_list(renamed_func_list);
-        _staging->serialize_commit(new_commit_path.string(), "");
-        return;
-    }
     _staging->set_fn_list(renamed_func_list);
     _staging->serialize_commit(_staging->_path.string(), "");
 }
