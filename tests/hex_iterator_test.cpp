@@ -1,5 +1,5 @@
-/*#define CATCH_CONFIG_MAIN
-#include "binary/hex_iterator.hpp"
+#define CATCH_CONFIG_MAIN
+#include "binary/bin_section.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -142,4 +142,4 @@ TEST_CASE("BinSection Iterator - End Iterator", "[BinSection]") {
     }
 
     REQUIRE(it == end_it);
-}*/
+}
