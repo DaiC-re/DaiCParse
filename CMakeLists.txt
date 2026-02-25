@@ -14,10 +14,17 @@ cmake_policy(SET CMP0091 NEW)
 project(DaiCParse LANGUAGES CXX DESCRIPTION "DaiCParse is a library for parsing binaries" VERSION 1.0.0)
 option(BUILD_TESTING "Build tests" TRUE)
 option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
+option(BUILD_WITH_MT "Build libraries as MultiThreaded DLL (Windows Only)" FALSE)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+include(InstallRequiredSystemLibraries)
 include(GenerateExportHeader)
+
+
 include(./cmake/dependencies.cmake)
+include(./cmake/compiler_options.cmake)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -94,7 +101,9 @@ target_link_libraries(${TARGET_NAME} PUBLIC capstone)
 if(BUILD_TESTING)
 	list(APPEND TEST_CASES
 	md5_test
-	hex_iterator_test
+	bin_section_test
+	binary_test
+	end_to_end_test
 	)
 	foreach(TEST_CASE ${TEST_CASES})
 		add_executable(${TEST_CASE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TEST_CASE}.cpp)

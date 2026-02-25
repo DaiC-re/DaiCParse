@@ -10,114 +10,122 @@
 #include <vector>
 
 struct BinSection {
-    std::string name;
-    uintptr_t offset;
-    LIEF::span<const uint8_t> content;
-    LIEF::span<const uint8_t> padding;
-    uintptr_t virtual_addr;
-    size_t virtual_size;
-    void serialize(std::ostream& out) const;
-    void deserialize(std::istream& in);
-    class SectionIterator;
-    BinSection(std::string name, LIEF::span<const uint8_t> content, LIEF::span<const uint8_t> padding,
-               uintptr_t offset, uintptr_t virtual_addr, size_t virtual_size)
-        : name(name),
-          content(content),
-          padding(padding),
-          offset(offset),
-          virtual_addr(virtual_addr),
-          virtual_size(virtual_size)
-    {}
-    BinSection() = default;
-    ~BinSection();
+	std::string name;
+	uintptr_t offset;
+	LIEF::span<const uint8_t> content;
+	LIEF::span<const uint8_t> padding;
+	uintptr_t virtual_addr;
+	size_t virtual_size;
+	void serialize(std::ostream& out) const;
+	void deserialize(std::istream& in);
+	class SectionIterator;
+	BinSection(std::string name, LIEF::span<const uint8_t> content, LIEF::span<const uint8_t> padding,
+		uintptr_t offset, uintptr_t virtual_addr, size_t virtual_size)
+		: name(name),
+		offset(offset),
+		content(content),
+		padding(padding),
+		virtual_addr(virtual_addr),
+		virtual_size(virtual_size)
+	{
+	}
+	BinSection(std::string name, LIEF::span<const uint8_t> content)
+		: name(std::move(name)),
+		offset(0),
+		content(content),
+		padding(),            // span vide
+		virtual_addr(0),
+		virtual_size(content.size())
+	{
+	}
+	BinSection() = default;
+	~BinSection();
 
-   private:
-    uint8_t* _content_buffer_ptr = nullptr;
-    uint8_t* _padding_buffer_ptr = nullptr;
+private:
+	uint8_t* _content_buffer_ptr = nullptr;
+	uint8_t* _padding_buffer_ptr = nullptr;
 
-   public:
-    using iterator = decltype(content)::iterator;
-    using const_iterator = decltype(content)::iterator;
-    using value_type = uint8_t;
-    using reference = const uint8_t&;
-    using const_reference = const uint8_t&;
+public:
+	using iterator = decltype(content)::iterator;
+	using const_iterator = decltype(content)::iterator;
+	using value_type = uint8_t;
+	using reference = const uint8_t&;
+	using const_reference = const uint8_t&;
 
-    iterator begin() { return content.begin(); }
-    iterator end() { return content.end(); }
-    const_iterator begin() const { return content.begin(); }
-    const_iterator end() const { return content.end(); }
-    bool operator==(const BinSection& other) const {
-        return virtual_addr == other.virtual_addr &&
-               virtual_size == other.virtual_size;
-    }
+	iterator begin() { return content.begin(); }
+	iterator end() { return content.end(); }
+	const_iterator begin() const { return content.begin(); }
+	const_iterator end() const { return content.end(); }
+	bool operator==(const BinSection& other) const {
+		return virtual_addr == other.virtual_addr &&
+			virtual_size == other.virtual_size;
+	}
 
-    class SectionIterator {
-       public:
-        using iterator_category = std::forward_iterator_tag;
-        using value_type = uint8_t;
-        using difference_type = std::ptrdiff_t;
-        using pointer = const uint8_t*;
-        using reference = const uint8_t&;
+	class SectionIterator {
+	public:
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = uint8_t;
+		using difference_type = std::ptrdiff_t;
+		using pointer = const uint8_t*;
+		using reference = const uint8_t&;
 
-       protected:
-        const BinSection* _section = nullptr;
-        bool _iterating_name = true;
-        std::size_t _name_index = 0;
-        LIEF::span<const uint8_t>::iterator _content_iter;
+	protected:
+		const BinSection* _section = nullptr;
+		bool _iterating_name = true;
+		std::size_t _name_index = 0;
+		LIEF::span<const uint8_t>::iterator _content_iter;
 
-       public:
-        SectionIterator() = default;
+	public:
+		SectionIterator() = default;
 
-        explicit SectionIterator(const BinSection& section);
+		explicit SectionIterator(const BinSection& section);
 
-        SectionIterator(const BinSection* section, bool is_end);
+		SectionIterator(const BinSection* section, bool is_end);
 
-        reference operator*() const;
+		reference operator*() const;
 
-        pointer operator->() const;
+		pointer operator->() const;
 
-        SectionIterator& operator++();
+		SectionIterator& operator++();
 
-        SectionIterator operator++(int);
+		SectionIterator operator++(int);
 
-        friend inline bool operator==(const SectionIterator& lhs,
-                                      const SectionIterator& rhs);
+		friend inline bool operator==(const SectionIterator& lhs,
+			const SectionIterator& rhs);
+	};
 
-        friend inline bool operator!=(const SectionIterator& lhs,
-                                      const SectionIterator& rhs);
-    };
+	// inline BinSection::iterator begin() const { return
+	// SectionIterator(*this); }
 
-    // inline BinSection::iterator begin() const { return
-    // SectionIterator(*this); }
+	// inline BinSection::iterator end() const {
+	//     return SectionIterator(this, true);
+	// }
 
-    // inline BinSection::iterator end() const {
-    //     return SectionIterator(this, true);
-    // }
-
-    inline std::size_t size() const { return content.size() + padding.size(); }
+	inline std::size_t size() const { return content.size() + padding.size(); }
 };
 
 inline bool operator==(const BinSection::SectionIterator& lhs,
-                       const BinSection::SectionIterator& rhs) {
-    if (lhs._section != rhs._section) {
-        return false;
-    }
-    if (!lhs._section) {
-        return true;
-    }
+	const BinSection::SectionIterator& rhs) {
+	if (lhs._section != rhs._section) {
+		return false;
+	}
+	if (!lhs._section) {
+		return true;
+	}
 
-    if (lhs._iterating_name != rhs._iterating_name) {
-        return false;
-    }
+	if (lhs._iterating_name != rhs._iterating_name) {
+		return false;
+	}
 
-    if (lhs._iterating_name) {
-        return lhs._name_index == rhs._name_index;
-    } else {
-        return lhs._content_iter == rhs._content_iter;
-    }
+	if (lhs._iterating_name) {
+		return lhs._name_index == rhs._name_index;
+	}
+	else {
+		return lhs._content_iter == rhs._content_iter;
+	}
 }
 
 inline bool operator!=(const BinSection::SectionIterator& lhs,
-                       const BinSection::SectionIterator& rhs) {
-    return !(lhs == rhs);
+	const BinSection::SectionIterator& rhs) {
+	return !(lhs == rhs);
 }
