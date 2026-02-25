@@ -102,6 +102,8 @@ if(BUILD_TESTING)
 	list(APPEND TEST_CASES
 	md5_test
 	bin_section_test
+	binary_test
+	end_to_end_test
 	)
 	foreach(TEST_CASE ${TEST_CASES})
 		add_executable(${TEST_CASE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/${TEST_CASE}.cpp)
