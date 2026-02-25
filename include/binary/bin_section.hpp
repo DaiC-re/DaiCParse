@@ -22,11 +22,19 @@ struct BinSection {
     BinSection(std::string name, LIEF::span<const uint8_t> content, LIEF::span<const uint8_t> padding,
                uintptr_t offset, uintptr_t virtual_addr, size_t virtual_size)
         : name(name),
+          offset(offset),
           content(content),
           padding(padding),
-          offset(offset),
           virtual_addr(virtual_addr),
           virtual_size(virtual_size)
+    {}
+    BinSection(std::string name, LIEF::span<const uint8_t> content)
+        : name(std::move(name)),
+          offset(0),
+          content(content),
+          padding(),            // span vide
+          virtual_addr(0),
+          virtual_size(content.size())
     {}
     BinSection() = default;
     ~BinSection();
@@ -81,9 +89,6 @@ struct BinSection {
         SectionIterator operator++(int);
 
         friend inline bool operator==(const SectionIterator& lhs,
-                                      const SectionIterator& rhs);
-
-        friend inline bool operator!=(const SectionIterator& lhs,
                                       const SectionIterator& rhs);
     };
 
