@@ -8,7 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
       with:
-        ref: ${{ github.event.pull_request.head.ref }}
+        ref: ${{ github.event.pull_request.base.ref }}
     - uses: DoozyX/clang-format-lint-action@v0.20
       with:
         source: '.'
