@@ -2,7 +2,6 @@
 #include <capstone/capstone.h>
 
 #include <LIEF/ELF/Binary.hpp>
-#include <format>
 #include <iostream>
 #include <optional>
 #include <ranges>
@@ -23,7 +22,6 @@ class Binary {
 
     size_t getInstructionCount() const;
     uintptr_t getTextSectionVirtualAddr() const;
-    // uintptr_t getImageBase() const;
     BinSection& getTextSection();
     const BinSection& getTextSection() const;
     std::pair<size_t, uintptr_t> closestCheckpointFromIndex(
@@ -38,18 +36,18 @@ class Binary {
 
     class Function {
        public:
-        Function() {};
-        Function(std::string name, uintptr_t start, uintptr_t end, size_t id)
+        Function() = default;
+        Function(std::string const& name, uintptr_t start, uintptr_t end, size_t id)
             : _name(name), _start(start), _end(end), _id(id) {}
 
-        const std::string getName() const { return _name; }
+        std::string getName() const { return _name; }
         uintptr_t getStart() const { return _start; }
         uintptr_t getEnd() const { return _end; }
         uintptr_t getSize() const { return _end - _start; }
         void serialize(std::ostream& out) const;
         void deserialize(std::istream& in);
         uint64_t getId() const { return _id; }
-        void setName(const std::string& name) { _name = name; }
+        void setName(std::string_view name) { _name = name; }
         bool operator==(const Function& other) const {
             return _name == other._name && _start == other._start &&
                    _end == other._end;
@@ -82,14 +80,14 @@ class Binary {
 
             cs_free(insn, count);
         } else
-            printf("ERROR: Failed to disassemble given code!\n");
+            std::cerr << "ERROR: Failed to disassemble given code!\n";
         return disasm_stream.str();
     }
 
     template <typename Range>
     requires std::ranges::range<Range> uintptr_t getTargetFromCheckpoint(
         std::pair<size_t, uintptr_t> checkpoint, size_t target_index,
-        const Range& view_from_checkpoint) {
+        const Range& view_from_checkpoint) const {
         size_t current_index = checkpoint.first;
         uintptr_t current_address = checkpoint.second;
         auto [next_checkpoint_index, next_checkpoint_addr] =
