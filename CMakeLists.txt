@@ -28,7 +28,7 @@ include(./cmake/compiler_options.cmake)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(TARGET_NAME DaiCLib)
+set(TARGET_NAME DaiCParse)
 set(TARGET_INCLUDE_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Enable Qt's MOC for this library
