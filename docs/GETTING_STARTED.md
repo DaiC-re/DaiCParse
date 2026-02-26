@@ -296,4 +296,3 @@ You're ready to start! Next, read [USER_GUIDE.md](USER_GUIDE.md) to learn:
 - [USER_GUIDE](USER_GUIDE.md) - How to use
 - [EXAMPLES](EXAMPLES.md) - Code samples
 - [API_REFERENCE](API_REFERENCE.md) - Function reference
-- [TROUBLESHOOTING](TROUBLESHOOTING.md) - Common issues
