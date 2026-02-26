@@ -45,6 +45,10 @@ add_executable(your_project test.cpp)
 target_link_libraries(your_project PRIVATE DaiCParse)
 ```
 
+## Getting started with DaiCParse
+
+If you want to get started with DaiCParse, please follow the instructions in [GETTING_STARTED.md](docs/GETTING_STARTED.md). It will guide you through the installation process and show you how to use the library.
+
 ### License:
 Portions of this software are licensed as follows:
 
